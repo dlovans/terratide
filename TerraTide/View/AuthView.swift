@@ -125,24 +125,12 @@ struct EmailPasswordView: View {
 }
 
 struct RemoveHighlightButtonStyle: ButtonStyle {
-    @State private var buttonClicked = false
-    
     func makeBody(configuration: Configuration) -> some View {
         configuration.label
-            .scaleEffect(buttonClicked ? 0.9 : 1)
-            .onTapGesture {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    buttonClicked = true
-                }
-                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        buttonClicked = false
-                    }
-                }
-            }
+            .scaleEffect(configuration.isPressed ? 0.9 : 1)
+            .animation(.easeInOut(duration: 0.2), value: configuration.isPressed)
     }
 }
-
 
 struct AlternativeAuthView: View {
     var authType: AuthType = .login
