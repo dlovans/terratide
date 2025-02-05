@@ -13,6 +13,7 @@ struct MenuView: View {
     @State private var currentPage = 1
     @State private var displayMenu: Bool = false
     @State private var rotateLines: Bool = false
+    
     var body: some View {
         NavigationStack(path: $path) {
             ZStack {
@@ -34,7 +35,9 @@ struct MenuView: View {
                     switch route {
                     case let .general(routeName):
                         if routeName == "createTide" {
-                            CreateTideView()
+                            CreateTideView(path: $path)
+                                .navigationBarBackButtonHidden()
+
                         }
                     case let .tide(tide):
                         TidePageView(id: tide.id)
@@ -46,6 +49,7 @@ struct MenuView: View {
                 SideMenuView(displayMenu: $displayMenu, currentPage: $currentPage, rotateLines: $rotateLines)
                 HamburgerMenuButtonView(displayMenu: $displayMenu, rotateLines: $rotateLines)
             }
+            .padding()
         }
     }
 }
@@ -208,8 +212,7 @@ struct HamburgerMenuButtonView: View {
                     }
                     .frame(alignment: .bottom)
                 }
-                .padding()
-                .padding(.top, 10)
+                .padding(.top, 8)
                 .padding(.leading, 5)
                 
                 Spacer()
@@ -219,6 +222,7 @@ struct HamburgerMenuButtonView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
 }
+
 #Preview {
     MenuView()
 }
