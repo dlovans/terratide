@@ -18,6 +18,7 @@ struct ContentView: View {
                 MenuView()
             }
         }
+        .fontDesign(.monospaced)
     }
 }
 
