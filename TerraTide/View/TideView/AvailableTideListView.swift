@@ -54,7 +54,6 @@ struct AvailableTideListView: View {
             }
         }
         .frame(maxHeight: .infinity, alignment: .bottom)
-        .padding()
     }
 }
 
@@ -110,12 +109,6 @@ struct TideItemView: View {
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .clipShape(RoundedRectangle(cornerRadius: 10))
-    }
-}
-
-struct CreateTideView: View {
-    var body: some View {
-        Text("Hello")
     }
 }
 
