@@ -31,7 +31,6 @@ struct ActiveTideListView: View {
             }
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-        .padding()
         .padding(.top, 7)
     }
 }
