@@ -7,10 +7,11 @@
 
 
 struct Tide: Identifiable, Hashable, Equatable {
-    let id: Int
+    let id: String
     let title: String
     let description: String
-    let creator: String
+    let creatorId: String
     let participants: Int
     let maxParticipants: Int
+    let joinedUsers: [String]
 }
