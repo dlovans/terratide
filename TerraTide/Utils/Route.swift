@@ -9,5 +9,5 @@ import Foundation
 
 enum Route: Hashable {
     case general(String)
-    case tide(Tide)
+    case tide(String) // Tide ID
 }
