@@ -10,20 +10,19 @@ import FirebaseAuth
 
 class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
-    @Published var currentUserId: String?
     
+    let authRepository = AuthRepository()
     var handle: AuthStateDidChangeListenerHandle?
     
+    /// Registers listener for authentication state.
     init() {
         handle = Auth.auth().addStateDidChangeListener { [weak self] auth, user in
             guard let self = self else { return }
 
-            if let user = user {
+            if let _ = user {
                 self.isAuthenticated = true
-                self.currentUserId = user.uid
             } else {
                 self.isAuthenticated = false
-                self.currentUserId = nil
             }
         }
     }
@@ -31,6 +30,25 @@ class AuthViewModel: ObservableObject {
     deinit {
         if let handle {
             Auth.auth().removeStateDidChangeListener(handle)
+        }
+    }
+    
+    /// Registers user with email and password, with Firebase Auth
+    /// - Parameters:
+    ///   - email: User-provided email.
+    ///   - password: User-provided password.
+    ///   - completion: A closure that is called when Firebase authentication operation completes.
+    ///     It provides a `Result` with either a successful `AuthDataResult` or `Error` if authentication operation fails.
+    func registerWithEmailAndPassword(email: String, password: String, completion: @escaping (Result<AuthDataResult, Error>) -> Void) {
+        authRepository.registerWithEmailAndPassword(email: email, password: password) { result in
+            switch result {
+            case .success(let authDataResult):
+                completion(.success(authDataResult))
+            case .failure(let error):
+                print("Failed to register user with email and password!")
+                completion(.failure(error))
+            }
+            
         }
     }
 }
