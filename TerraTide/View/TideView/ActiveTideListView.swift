@@ -8,44 +8,66 @@
 import SwiftUI
 
 struct ActiveTideListView: View {
+    @Binding var path: [Route]
+    
+    let tides: [Tide] = [
+        Tide(id: "0", title: "Dlovan's Psycho Game", description: "Jag ska irritera dig. Första person som blir arg är en n00b.", creatorId: "Dlovan", participants: 9999, maxParticipants: 10000, joinedUsers: ["Dlovan", "Ibn"]),
+        Tide(id: "1", title: "Chess Masters", description: "Tävling för schackspelare", creatorId: "Magnus", participants: 50, maxParticipants: 100, joinedUsers: ["Dlovan", "Ibn"]),
+        Tide(id: "2", title: "Swift Developers", description: "Diskutera Swift och iOS", creatorId: "AppleDev", participants: 120, maxParticipants: 500, joinedUsers: ["Dlovan", "Ibn"])
+    ]
+    
     var body: some View {
         ZStack {
             VStack {
                 HStack {
                     Text("My Tides")
-                        .font(.title2)
                 }
                 ScrollView {
                     LazyVStack {
-                        ActiveTideItemView()
-                        ActiveTideItemView()
-                        ActiveTideItemView()
-                        ActiveTideItemView()
-                        ActiveTideItemView()
-                        ActiveTideItemView()
-                        ActiveTideItemView()
-                        
+                        ForEach(tides, id: \.self) { tide in
+                            ActiveTideItemView(
+                                id: tide.id,
+                                creatorId: tide.creatorId,
+                                title: tide.title,
+                                description: tide.description,
+                                participants: tide.participants,
+                                maxParticipants: tide.maxParticipants,
+                                path: $path
+                            )
+                        }
                     }
                 }
                 .scrollIndicators(.hidden)
+                .padding(.top, 10)
             }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .frame(maxHeight: .infinity, alignment: .top)
         .padding(.top, 7)
+        .padding()
     }
 }
 
 // Joined and created tides, sorted by time, descending order.
 struct ActiveTideItemView: View {
+    let id: String
+    let creatorId: String
+    let title: String
+    let description: String
+    let participants: Int
+    let maxParticipants: Int
+    let now = Date()
+
+    @Binding var path: [Route]
+    @State private var showReportTideSheet: Bool = false
+    
     var body: some View {
         ZStack {
             VStack (spacing: 10) {
-                Text("Dlovan's psycho game")
-                    .font(.title3)
+                Text(title)
                     .frame(maxWidth: .infinity,alignment: .leading)
                 Divider()
                     .background(.gray)
-                Text("Jag ska irritera dig. Första person som blir arg är en n00b.")
+                Text(description)
                     .frame(maxWidth: .infinity,alignment: .leading)
                 Divider()
                     .background(.gray)
@@ -54,24 +76,33 @@ struct ActiveTideItemView: View {
                     Spacer()
                     Image(systemName: "clock.fill")
                         .foregroundStyle(.orange)
-                    Text(Date(), style: .time)
-                    Text(Date(), style: .date)
+                    Text(now, style: .time)
+                        .font(.system(size: 12))
+                    Text(now, style: .date)
+                        .font(.system(size: 12))
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 HStack {
-                    Text("@Dlovan")
+                    Text("By: \(creatorId)")
                     Spacer()
                     Image(systemName: "person.fill")
-                    Text("9999/10000")
+                    Text("\(participants)/\(maxParticipants)")
+                        .font(.system(size: 14))
                 }
                 HStack {
-                    Text("Expires in:")
-                    Text("5 hours")
+                    Text(now.addingTimeInterval(7200) < Date() ? "Closed" : "Closing: ")
                     Spacer()
+                    Image(systemName: "clock.fill")
+                        .foregroundStyle(now.addingTimeInterval(7200) < Date() ? .red : .orange)
+                    Text(now.addingTimeInterval(7200), style: .time)
+                        .font(.system(size: 12))
+                    Text(now.addingTimeInterval(7200), style: .date)
+                        .font(.system(size: 12))
                 }
                 HStack {
                     Button {
                         // Leave button, deactivating tide for this user.
+                        // Left this tide...
                     } label: {
                         HStack {
                             Image(systemName: "arrow.backward")
@@ -88,6 +119,7 @@ struct ActiveTideItemView: View {
                     .buttonStyle(RemoveHighlightButtonStyle())
                     Button {
                         // Join button opens tide page.
+                        path.append(.tide(String(id)))
                         
                     } label: {
                         HStack {
@@ -105,13 +137,29 @@ struct ActiveTideItemView: View {
                 }
             }
             .padding()
+            .overlay {
+                RoundedRectangle(cornerRadius: 10)
+                    .stroke(Color.black, lineWidth: 1)
+                    .blur(radius: 20)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
-        .background(Color.gray.opacity(0.1))
         .clipShape(RoundedRectangle(cornerRadius: 10))
+        .background(.white)
+        .contextMenu {
+            // If userId != creatorId, display these...
+            Button {
+                showReportTideSheet = true
+            } label: {
+                Text("Report")
+            }
+        }
+        .sheet(isPresented: $showReportTideSheet) {
+            Text("Report Tide")
+        }
     }
 }
 
 #Preview {
-    ActiveTideListView()
+    ActiveTideListView(path: .constant([]))
 }
