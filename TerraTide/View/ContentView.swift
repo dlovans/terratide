@@ -8,13 +8,13 @@
 import SwiftUI
 
 struct ContentView: View {
-    //Change later to observe user object.
-    private var isLoggedIn = true
+    @EnvironmentObject private var authViewModel: AuthViewModel
+
     private var isBanned = false
     private var isNewUser = false
     var body: some View {
         VStack {
-            if !isLoggedIn {
+            if !authViewModel.isAuthenticated {
                 AuthView()
             } else {
                 if isBanned {
@@ -31,5 +31,7 @@ struct ContentView: View {
 }
 
 #Preview {
+    let authViewModel = AuthViewModel()
     ContentView()
+        .environmentObject(authViewModel)
 }
