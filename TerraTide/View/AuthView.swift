@@ -9,7 +9,7 @@ import SwiftUI
 
 struct AuthView: View {
     @State private var authType: AuthType = .login
-    @State private var isEmailAuth: Bool = false
+    @State private var isEmailAuth: Bool = true
     
     var body: some View {
         ZStack {
@@ -180,22 +180,22 @@ struct AlternativeAuthView: View {
             }
             
             VStack {
-                Button {
-                    withAnimation {
-                        isEmailAuth.toggle()
-                    }
-                } label: {
-                    HStack {
-                        Image(systemName: isEmailAuth ? "phone" : "mail")
-                        Text("\(authType == .login ? "Continue with" : "Signup with") \(isEmailAuth ? "Phone Number" : "Email")")
-                    }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .buttonStyle(RemoveHighlightButtonStyle())
+//                Button {
+//                    withAnimation {
+//                        isEmailAuth.toggle()
+//                    }
+//                } label: {
+//                    HStack {
+//                        Image(systemName: isEmailAuth ? "phone" : "mail")
+//                        Text("\(authType == .login ? "Continue with" : "Signup with") \(isEmailAuth ? "Phone Number" : "Email")")
+//                    }
+//                    .foregroundStyle(.white)
+//                    .frame(maxWidth: .infinity)
+//                    .padding()
+//                    .background(.black)
+//                    .clipShape(RoundedRectangle(cornerRadius: 10))
+//                }
+//                .buttonStyle(RemoveHighlightButtonStyle())
                 
                 Button {
                     if authType == .login {
