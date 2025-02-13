@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct MenuView: View {
+    let tideId: String = "123"
     @State private var path: [Route] = []
     @State private var position = ScrollPosition(edge: .leading)
     @State private var currentPage = 1
@@ -20,14 +21,18 @@ struct MenuView: View {
                 
                 TabView(selection: $currentPage) {
                     Tab(value: 0) {
-                        ActiveTideListView()
+                        ActiveTideListView(path: $path)
                     }
                     Tab(value: 1) {
                         AvailableTideListView(path: $path)
                     }
                     
                     Tab(value: 2) {
-                        Text("Settings")
+                        ChatView()
+                    }
+                    
+                    Tab(value: 3) {
+                        SettingsView()
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -37,10 +42,10 @@ struct MenuView: View {
                         if routeName == "createTide" {
                             CreateTideView(path: $path)
                                 .navigationBarBackButtonHidden()
-
                         }
-                    case let .tide(tide):
-                        TidePageView(id: tide.id)
+                    case let .tide(tideId):
+                        TidePageView(path: $path, tideId: tideId)
+                            .navigationBarBackButtonHidden()
                     @unknown default:
                         Text("Unknown Route")
                     }
@@ -48,8 +53,8 @@ struct MenuView: View {
                 
                 SideMenuView(displayMenu: $displayMenu, currentPage: $currentPage, rotateLines: $rotateLines)
                 HamburgerMenuButtonView(displayMenu: $displayMenu, rotateLines: $rotateLines)
+                    .padding()
             }
-            .padding()
         }
     }
 }
@@ -133,6 +138,31 @@ struct SideMenuView: View {
                             } label: {
                                 HStack {
                                     Group {
+                                        Image(systemName: "bubble.left.and.bubble.right")
+                                        Text("Chat")
+                                    }
+                                    .foregroundStyle(currentPage == 2 ? .white: .black)
+                                }
+                                .padding(.horizontal)
+                                .padding(.vertical, 12)
+                                .frame(maxWidth: .infinity)
+                                .background(currentPage == 2 ? .orange : .white)
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                            
+                            Button {
+                                withAnimation {
+                                    displayMenu = false
+                                    rotateLines = false
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                                    withAnimation {
+                                        currentPage = 3
+                                    }
+                                }
+                            } label: {
+                                HStack {
+                                    Group {
                                         Image(systemName: "gear")
                                         Text("Settings")
                                     }
@@ -141,7 +171,7 @@ struct SideMenuView: View {
                                 .padding(.horizontal)
                                 .padding(.vertical, 12)
                                 .frame(maxWidth: .infinity)
-                                .background(currentPage == 2 ? .orange : .white)
+                                .background(currentPage == 3 ? .orange : .white)
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                             }
                         }
