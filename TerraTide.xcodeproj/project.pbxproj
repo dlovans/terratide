@@ -46,9 +46,9 @@
 		CACD898F2D3FE97700E672D5 = {
 			isa = PBXGroup;
 			children = (
-				CACD899A2D3FE97700E672D5 /* TerraTide */,
 				CAB38CE82D5E585C003C88B6 /* Frameworks */,
 				CACD89992D3FE97700E672D5 /* Products */,
+				CACD899A2D3FE97700E672D5 /* TerraTide */,
 			);
 			sourceTree = "<group>";
 		};
