@@ -45,6 +45,7 @@ struct PresentationView: View {
 
 struct PhoneEmailAuthView: View {
     var authType: AuthType = .login
+    @EnvironmentObject var authViewModel: AuthViewModel
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var phoneNumber: String = ""
@@ -132,9 +133,16 @@ struct PhoneEmailAuthView: View {
             
             Button {
                 if authType == .login {
-                    print("Logging in")
+                    print("sign in user")
                 } else {
-                    print("Joining TerraTide")
+                    authViewModel.registerWithEmailAndPassword(email: email, password: password) { result in
+                        switch result {
+                        case .success(let user):
+                            print("Create User instance with \(user)")
+                        case .failure(let error):
+                            print("Error: \(error)")
+                        }
+                    }
                 }
             } label: {
                 Text(isEmailAuth ? authType == .login ? "Login" : "Join" : "Send code")
