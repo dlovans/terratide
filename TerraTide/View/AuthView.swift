@@ -9,13 +9,14 @@ import SwiftUI
 
 struct AuthView: View {
     @State private var authType: AuthType = .login
+    @State private var isEmailAuth: Bool = false
     
     var body: some View {
         ZStack {
             VStack (spacing: 0) {
                 PresentationView()
-                EmailPasswordView(authType: self.authType)
-                AlternativeAuthView(authType: self.authType)
+                PhoneEmailAuthView(authType: self.authType, isEmailAuth: $isEmailAuth)
+                AlternativeAuthView(isEmailAuth: $isEmailAuth, authType: self.authType)
                 SwitchAuthView(authType: $authType)
             }
         }
@@ -42,10 +43,13 @@ struct PresentationView: View {
     }
 }
 
-struct EmailPasswordView: View {
+struct PhoneEmailAuthView: View {
     var authType: AuthType = .login
     @State private var email: String = ""
     @State private var password: String = ""
+    @State private var phoneNumber: String = ""
+    @Binding var isEmailAuth: Bool
+    
     var body: some View {
         VStack (spacing: 20) {
             Text(authType == .login ? "Login to TerraTide" : "Join TerraTide")
@@ -53,50 +57,77 @@ struct EmailPasswordView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.title)
             
-            VStack {
-                Text("Email")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                TextField("", text: $email)
-                    .accessibilityHint(Text("Enter your email address."))
-                    .keyboardType(.emailAddress)
-                    .padding()
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(.orange, lineWidth: 1)
-                    }
-                    .overlay {
-                        if email.isEmpty {
-                            Text("email@example.com")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 18)
-                                .allowsHitTesting(false)
-                                .tint(.indigo)
-                                .opacity(0.6)
+            if isEmailAuth {
+                VStack {
+                    Text("Email")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    TextField("", text: $email)
+                        .accessibilityHint(Text("Enter your email address."))
+                        .keyboardType(.emailAddress)
+                        .padding()
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(.orange, lineWidth: 1)
                         }
-                    }
-            }
-            
-            VStack {
-                Text("Password")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                SecureField("", text: $password)
-                    .accessibilityHint(Text("Enter your password."))
-                    .keyboardType(.default)
-                    .padding()
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 8)
-                            .stroke(.orange, lineWidth: 1)
-                    }
-                    .overlay {
-                        if password.isEmpty {
-                            Text("Password")
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding(.horizontal, 18)
-                                .allowsHitTesting(false)
-                                .foregroundStyle(.indigo)
-                                .opacity(0.6)
+                        .overlay {
+                            if email.isEmpty {
+                                Text("email@example.com")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 18)
+                                    .allowsHitTesting(false)
+                                    .tint(.indigo)
+                                    .opacity(0.6)
+                            }
                         }
-                    }
+                }
+                
+                VStack {
+                    Text("Password")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    SecureField("", text: $password)
+                        .accessibilityHint(Text("Enter your password."))
+                        .keyboardType(.default)
+                        .padding()
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 8)
+                                .stroke(.orange, lineWidth: 1)
+                        }
+                        .overlay {
+                            if password.isEmpty {
+                                Text("Password")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 18)
+                                    .allowsHitTesting(false)
+                                    .foregroundStyle(.indigo)
+                                    .opacity(0.6)
+                            }
+                        }
+                }
+            } else {
+                // Phone auth
+                
+                VStack {
+                    Text("Phone")
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                    TextField("", text: $phoneNumber)
+                        .padding()
+                        .keyboardType(.phonePad)
+                        .overlay {
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(.orange, lineWidth: 1)
+                        }
+                        .overlay {
+                            if phoneNumber.isEmpty {
+                                Text("+46728652474")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                    .padding(.horizontal, 18)
+                                    .allowsHitTesting(false)
+                                    .foregroundStyle(.indigo)
+                                    .opacity(0.6)
+                                    
+                            }
+                        }
+                }
             }
             
             Button {
@@ -106,7 +137,7 @@ struct EmailPasswordView: View {
                     print("Joining TerraTide")
                 }
             } label: {
-                Text(authType == .login ? "Login" : "Join")
+                Text(isEmailAuth ? authType == .login ? "Login" : "Join" : "Send code")
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.orange)
@@ -119,7 +150,6 @@ struct EmailPasswordView: View {
             .accessibilityHint(Text("Click to \(authType == .login ? "login" : "join")."))
             
         }
-        .frame(maxHeight: .infinity, alignment: .top)
         .padding()
     }
 }
@@ -133,7 +163,10 @@ struct RemoveHighlightButtonStyle: ButtonStyle {
 }
 
 struct AlternativeAuthView: View {
+    @Binding var isEmailAuth: Bool
+    
     var authType: AuthType = .login
+    
     var body: some View {
         VStack (spacing: 20) {
             ZStack {
@@ -147,6 +180,23 @@ struct AlternativeAuthView: View {
             }
             
             VStack {
+                Button {
+                    withAnimation {
+                        isEmailAuth.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: isEmailAuth ? "phone" : "mail")
+                        Text("\(authType == .login ? "Continue with" : "Signup with") \(isEmailAuth ? "Phone Number" : "Email")")
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(RemoveHighlightButtonStyle())
+                
                 Button {
                     if authType == .login {
                         print("Logging in with Apple")
