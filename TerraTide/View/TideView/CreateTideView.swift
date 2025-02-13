@@ -13,7 +13,6 @@ struct CreateTideView: View {
     @State private var title: String = ""
     @State private var description: String = ""
     @State private var maxParticipants: Int = 3
-    @State private var currentParticipants: Int = 1
     
     @FocusState private var titleIsFocused: Bool
     @State private var offsetTitle: CGFloat = 0
@@ -22,9 +21,7 @@ struct CreateTideView: View {
     @State private var offsetDesc: CGFloat = 0
     
     @FocusState private var participantsIsFocused: Bool
-    
-    @State private var approvalRequired: Bool = false
-    
+        
     var body: some View {
         ZStack {
             Color.white
@@ -43,7 +40,8 @@ struct CreateTideView: View {
                         Image(systemName: "arrow.backward")
                             .foregroundStyle(.black)
                     }
-                    .frame(width: 50, alignment: .leading)
+                    .frame(width: 50, height: 30, alignment: .leading)
+
                     Spacer()
                     Text("Create a Tide!")
                         .font(.title2)
@@ -118,35 +116,6 @@ struct CreateTideView: View {
                 }
                 
                 HStack {
-                    Text("How many are you now?")
-                        .fixedSize(horizontal: true, vertical: false)
-                    Spacer()
-                    TextField("", value: $currentParticipants, format: .number)
-                        .focused($participantsIsFocused)
-                        .keyboardType(.numberPad)
-                        .padding(.vertical, 8)
-                        .padding(.horizontal, 5)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(.black, lineWidth: 1)
-                        }
-                        .frame(width: 100)
-                        .multilineTextAlignment(.center)
-                        .onChange(of: currentParticipants) { oldValue, newValue in
-                            if newValue > 9999 {
-                                currentParticipants = 9999
-                            } else if newValue < 1 {
-                                currentParticipants = 1
-                            }
-                        }
-                }
-                .padding(10)
-                .overlay {
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(.black, lineWidth: 1)
-                }
-                
-                HStack {
                     Text("Max participants?")
                         .fixedSize(horizontal: true, vertical: false)
                     Spacer()
@@ -164,8 +133,6 @@ struct CreateTideView: View {
                         .onChange(of: maxParticipants) { oldValue, newValue in
                             if newValue > 10000 {
                                 maxParticipants = 10000
-                            } else if newValue <= currentParticipants {
-                                maxParticipants = currentParticipants + 1
                             }
                         }
                 }
@@ -175,29 +142,25 @@ struct CreateTideView: View {
                         .stroke(.black, lineWidth: 1)
                 }
                 
-                Toggle("Approve who can join?", isOn: $approvalRequired)
-                    .padding(10)
-                    .overlay {
-                        RoundedRectangle(cornerRadius: 10)
-                            .stroke(.black, lineWidth: 1)
-                    }
-                    .tint(.orange)
-                
                 Button {
                     // Create button. Creates tide, returns TideID, appending id path to Route
+                    withAnimation {
+                        path.removeAll { $0 == .general("createTide") }
+                        path.append(.tide("0"))
+                    }
                 } label: {
                     Text("Three is a company")
                         .foregroundStyle(.white)
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(.orange)
-                        .cornerRadius(10)
+                        .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
                 .buttonStyle(RemoveHighlightButtonStyle())
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-            .padding()
         }
+        .padding()
     }
 }
 
