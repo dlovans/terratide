@@ -11,10 +11,14 @@ import FirebaseCore
 @main
 struct TerraTideApp: App {
     @UIApplicationDelegateAdaptor var appDelegate: AppDelegate
+    
+    @StateObject private var authViewModel = AuthViewModel()
+    @StateObject private var userViewModel = UserViewModel()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(authViewModel)
         }
     }
 }
