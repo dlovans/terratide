@@ -10,8 +10,6 @@ import FirebaseAuth
 import FirebaseFirestore
 
 class AuthRepository {
-    
-    
     /// Register user with email and password using Firebase Auth.
     /// - Parameters:
     ///   - email: User-provided email.
@@ -36,6 +34,18 @@ class AuthRepository {
             }
             
             completion(.success(authResult))
+        }
+    }
+    
+    /// Signs out user from Firebase.
+    /// - Returns: Sign out status. Used to display feedback to user if sign out fails.
+    func signOut() -> AuthStatus {
+        do {
+            try Auth.auth().signOut()
+            return .logoutSuccess
+        } catch {
+            print("Failed to sign out user!")
+            return .logoutFailure
         }
     }
 }
