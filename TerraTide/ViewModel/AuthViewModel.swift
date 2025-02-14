@@ -10,6 +10,7 @@ import FirebaseAuth
 
 class AuthViewModel: ObservableObject {
     @Published var isAuthenticated = false
+    @Published var initialLoadComplete = false
     
     let authRepository = AuthRepository()
     var handle: AuthStateDidChangeListenerHandle?
@@ -24,6 +25,8 @@ class AuthViewModel: ObservableObject {
             } else {
                 self.isAuthenticated = false
             }
+            
+            initialLoadComplete = true
         }
     }
     
@@ -50,5 +53,11 @@ class AuthViewModel: ObservableObject {
             }
             
         }
+    }
+    
+    /// Signs out user from Firebase.
+    /// - Returns: `AuthStatus` - `.logoutFailure` for sign out failure and `.logoutSuccess` for sign out success.
+    func signOut() -> AuthStatus {
+        return authRepository.signOut()
     }
 }
