@@ -8,11 +8,15 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @EnvironmentObject var authViewModel: AuthViewModel
+    @State private var  displayErrorMessage: Bool = false
+    @State private var errorMessage: String = ""
+    @State private var errorWorkItem: DispatchWorkItem?
+    
     var body: some View {
         ZStack {
             VStack(spacing: 20) {
                 Text("Settings")
-                    .font(.title2)
                 Button {
                     // Feedback sheet
                 } label: {
@@ -42,7 +46,22 @@ struct SettingsView: View {
                 }
                 
                 Button {
-                    // Log out
+                    if authViewModel.signOut() == .logoutFailure {
+                        errorWorkItem?.cancel()
+                        withAnimation {
+                            errorMessage = "Failed to logout. Restart app or try again later."
+                            displayErrorMessage = true
+                        }
+                        
+                        errorWorkItem = DispatchWorkItem {
+                            withAnimation {
+                                displayErrorMessage = false
+                                errorMessage = ""
+                            }
+                        }
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: errorWorkItem!)
+                    }
                 } label: {
                     HStack {
                         Text("Logout")
@@ -59,6 +78,17 @@ struct SettingsView: View {
                 
             }
             .buttonStyle(RemoveHighlightButtonStyle())
+            .frame(maxHeight: .infinity, alignment: .top)
+            .padding(.top, 10)
+            
+            Text(errorMessage)
+                .padding()
+                .background(.black)
+                .foregroundStyle(.white)
+                .font(.caption)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .offset(x: displayErrorMessage ? 0 : -500)
+                .frame(maxHeight: .infinity, alignment: .bottom)
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .padding()
