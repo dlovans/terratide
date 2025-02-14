@@ -166,7 +166,7 @@ struct SideMenuView: View {
                                         Image(systemName: "gear")
                                         Text("Settings")
                                     }
-                                    .foregroundStyle(currentPage == 2 ? .white: .black)
+                                    .foregroundStyle(currentPage == 3 ? .white: .black)
                                 }
                                 .padding(.horizontal)
                                 .padding(.vertical, 12)
