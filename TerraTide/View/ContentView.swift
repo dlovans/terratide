@@ -14,15 +14,17 @@ struct ContentView: View {
     private var isNewUser = false
     var body: some View {
         VStack {
-            if !authViewModel.isAuthenticated {
-                AuthView()
-            } else {
-                if isBanned {
-                    Text("Banned")
-                } else if isNewUser {
-                    Text("Create new username")
+            if authViewModel.initialLoadComplete {
+                if !authViewModel.isAuthenticated {
+                    AuthView()
                 } else {
-                    MenuView()
+                    if isBanned {
+                        BanHammerView()
+                    } else if isNewUser {
+                        NewUserView()
+                    } else {
+                        MenuView()
+                    }
                 }
             }
         }
