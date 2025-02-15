@@ -83,4 +83,32 @@ class UserRepository {
             return .error
         }
     }
+    
+    
+    /// Updates new user's username and date of birth.
+    /// - Parameters:
+    ///   - username: User-provided username.
+    ///   - dateOfBirth: User-provided date of birth.
+    /// - Returns: A value representing the status of this operation.
+    func updateNewUserData(username: String, dateOfBirth: Date) async -> UpdateNewUserStatus {
+        if let userId = Auth.auth().currentUser?.uid {
+            do {
+                let querySnapshot = try await db.collection("users").whereField("username", isEqualTo: username).limit(to: 1).getDocuments()
+                if !querySnapshot.documents.isEmpty {
+                    return .usernameAlreadyExists
+                }
+                
+                try await db.collection("users").document(userId).updateData([
+                    "username": username,
+                    "dateOfBirth": dateOfBirth
+                ])
+                return .updateSuccess
+            } catch {
+                print("Failed to update new user data.")
+                return .updateFailed
+            }
+        } else {
+            return .unAuthenticatedUser
+        }
+    }
 }
