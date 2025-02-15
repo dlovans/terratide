@@ -11,6 +11,8 @@ struct ContentView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
     
+    let locationEnabled: Bool = false // Emulate location permission status...
+    
     var body: some View {
         VStack {
             if authViewModel.initialLoadComplete && userViewModel.initialLoadComplete  {
@@ -23,6 +25,8 @@ struct ContentView: View {
                                 BanHammerView()
                             } else if user.username.isEmpty {
                                 NewUserView()
+                            } else if !locationEnabled {
+//                                LocationPermissionView()
                             } else {
                                 MenuView()
                             }
