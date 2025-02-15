@@ -19,6 +19,7 @@ struct TerraTideApp: App {
         WindowGroup {
             ContentView()
                 .environmentObject(authViewModel)
+                .environmentObject(userViewModel)
         }
     }
 }
