@@ -6,16 +6,19 @@
 //
 
 import SwiftUI
+import FirebaseAuth
 
 struct AuthView: View {
     @State private var authType: AuthType = .login
     @State private var isEmailAuth: Bool = true
+    @State private var errorMessage = ""
+    @State private var displayErrorMessage: Bool = false
     
     var body: some View {
         ZStack {
             VStack (spacing: 0) {
                 PresentationView()
-                PhoneEmailAuthView(authType: self.authType, isEmailAuth: $isEmailAuth)
+                PhoneEmailAuthView(authType: self.authType, isEmailAuth: $isEmailAuth, errorMessage: $errorMessage, displayErrorMessage: $displayErrorMessage)
                 AlternativeAuthView(isEmailAuth: $isEmailAuth, authType: self.authType)
                 SwitchAuthView(authType: $authType)
             }
@@ -46,17 +49,31 @@ struct PresentationView: View {
 struct PhoneEmailAuthView: View {
     var authType: AuthType = .login
     @EnvironmentObject var authViewModel: AuthViewModel
+    @EnvironmentObject var userViewModel: UserViewModel
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var phoneNumber: String = ""
     @Binding var isEmailAuth: Bool
+    @Binding var errorMessage: String
+    @Binding var displayErrorMessage: Bool
     
     var body: some View {
-        VStack (spacing: 20) {
+        VStack (spacing: 10) {
             Text(authType == .login ? "Login to TerraTide" : "Join TerraTide")
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .font(.title)
+            
+            Text(errorMessage)
+                .font(.caption)
+                .fixedSize(horizontal: false, vertical: true)
+                .frame(maxWidth: .infinity)
+                .frame(minHeight: 30)
+                .foregroundStyle(.white)
+                .padding(10)
+                .background(.black)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .offset(x: displayErrorMessage ? 0 : -500)
             
             if isEmailAuth {
                 VStack {
@@ -106,7 +123,6 @@ struct PhoneEmailAuthView: View {
                 }
             } else {
                 // Phone auth
-                
                 VStack {
                     Text("Phone")
                         .frame(maxWidth: .infinity, alignment: .leading)
@@ -132,13 +148,100 @@ struct PhoneEmailAuthView: View {
             }
             
             Button {
+                if email.isEmpty || password.isEmpty || password.count < 6 {
+                    if email.isEmpty {
+                        errorMessage = "Please enter an email address."
+                    } else if password.isEmpty {
+                        errorMessage = "Please enter a password."
+                    } else if password.count < 6 {
+                        errorMessage = "Password must be at least 6 characters long."
+                    }
+                    
+                    withAnimation {
+                        displayErrorMessage = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                        withAnimation {
+                            displayErrorMessage = false
+                        }
+                    }
+                    return
+                }
+                
                 if authType == .login {
-                    print("sign in user")
+                    authViewModel.signInWithEmailAndPassword(email: email, password: password) { result in
+                        switch result {
+                            case .success:
+                            Task { @MainActor in
+                                // In case user was created with FirebaseAuth but not in Firestore
+                                let status = await userViewModel.createUser()
+                                if status {
+                                    userViewModel.attachUserListener()
+                                } else {
+                                    errorMessage = "An error occurred while creating your user account. Try logging in!"
+                                    withAnimation {
+                                        displayErrorMessage = true
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                                        withAnimation {
+                                            displayErrorMessage = false
+                                        }
+                                    }
+                                }
+                            }
+                                
+                            case .failure(let error):
+                            if let authError = error as? AuthErrorCode {
+                                switch authError {
+                                case .accountExistsWithDifferentCredential:
+                                    errorMessage = "This email address is already in use. Try logging in with Google or Apple."
+                                case .userNotFound:
+                                    errorMessage = "This email address is not registered. Try signing up."
+                                case .emailAlreadyInUse:
+                                    errorMessage = "You're already logged in. Delete local app data and try again."
+                                case .invalidEmail:
+                                    errorMessage = "Invalid email address. Check your spelling and try again."
+                                case .weakPassword:
+                                    errorMessage = "Password must be at least 6 characters long."
+                                case .missingEmail:
+                                    errorMessage = "Email address is required."
+                                case .wrongPassword:
+                                    errorMessage = "Wrong email or password"
+                                default:
+                                    errorMessage = "An error occurred"
+                                }
+                            } else {
+                                errorMessage = "An error occurred while logging in. Try again later."
+                            }
+                            withAnimation {
+                                displayErrorMessage = true
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                                withAnimation {
+                                    displayErrorMessage = false
+                                }
+                            }
+                        }
+                    }
                 } else {
                     authViewModel.registerWithEmailAndPassword(email: email, password: password) { result in
                         switch result {
-                        case .success(let user):
-                            print("Create User instance with \(user)")
+                        case .success:
+                            Task { @MainActor in
+                                let status = await userViewModel.createUser()
+                                if status {
+                                    userViewModel.attachUserListener()
+                                } else {
+                                    errorMessage = "An error occurred while creating your user account. Try logging in!"
+                                    withAnimation {
+                                        displayErrorMessage = true
+                                    }
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                                        withAnimation {
+                                            displayErrorMessage = false
+                                        }
+                                    }                                    }
+                            }
                         case .failure(let error):
                             print("Error: \(error)")
                         }
