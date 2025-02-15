@@ -19,7 +19,7 @@ class AuthViewModel: ObservableObject {
     init() {
         handle = Auth.auth().addStateDidChangeListener { [weak self] auth, user in
             guard let self = self else { return }
-
+            
             if let _ = user {
                 self.isAuthenticated = true
             } else {
@@ -52,6 +52,31 @@ class AuthViewModel: ObservableObject {
                 completion(.failure(error))
             }
             
+        }
+    }
+    
+    
+    /// Sign in users with email and password.
+    /// - Parameters:
+    ///   - email: User-provided email
+    ///   - password: User-provided password
+    ///   - completion: A closure that is called after a sign in attempt is completed.
+    func signInWithEmailAndPassword(email: String, password: String, completion: @escaping (Result<AuthDataResult, Error>) -> Void) {
+        authRepository.signInWithEmailAndPassword(email: email, password: password) { result in
+            switch result {
+            case .success(let authDataResult):
+                completion(.success(authDataResult))
+            case .failure(let error):
+                if let error = error as NSError? {
+                    if let authErrorCode = AuthErrorCode(rawValue: error.code) {
+                        completion(.failure(authErrorCode))
+                    } else {
+                        completion(.failure(error))
+                    }
+                } else {
+                    completion(.failure(error))
+                }
+            }
         }
     }
     
