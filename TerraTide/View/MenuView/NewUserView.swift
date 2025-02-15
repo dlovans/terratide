@@ -8,6 +8,7 @@
 import SwiftUI
 
 struct NewUserView: View {
+    @EnvironmentObject var userViewModel: UserViewModel
     @State private var username: String = ""
     @State private var usernameFeedback: String = ""
     @State private var usernameIsValid: Bool = false
@@ -27,7 +28,7 @@ struct NewUserView: View {
     }()
     
     var body: some View {
-        VStack (spacing: 40) {
+        VStack (spacing: 30) {
             VStack {
                 Text("Create a username (cannot be changed):")
                     .frame(maxWidth: .infinity, alignment: .leading)
@@ -42,7 +43,7 @@ struct NewUserView: View {
                 Text(usernameFeedback)
                     .font(.footnote)
                     .foregroundStyle(usernameIsValid ? Color.green : Color.red)
-                    .frame(maxWidth: .infinity, minHeight: 15, alignment: .topLeading)
+                    .frame(maxWidth: .infinity, minHeight: 20, alignment: .topLeading)
             }
             .onChange(of: username) { oldValue, newValue in
                 withAnimation {
@@ -56,6 +57,21 @@ struct NewUserView: View {
                         usernameIsValid = false
                         usernameFeedback = "Username cannot be longer than 15 characters."
                     } else {
+                        Task { @MainActor in
+                            let result = await userViewModel.checkUsernameAvailability(for: newValue)
+                            switch result {
+                                case .available:
+                                    usernameFeedback = "Username available."
+                                    usernameIsValid = true
+                                case .unavailable:
+                                    usernameFeedback = "Username not available."
+                                    usernameIsValid = false
+                                case .error:
+                                    usernameFeedback = "An error occurred while checking username availability."
+                                    usernameIsValid = false
+                                
+                            }
+                        }
                         usernameFeedback = ""
                         usernameIsValid = true
                     }
@@ -65,6 +81,7 @@ struct NewUserView: View {
             VStack {
                 Text("Date of birth (used to display relevant Tides):")
                     .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
 
                 DatePicker("", selection: $birthDate, in: dateRange, displayedComponents: .date)
                     .datePickerStyle(WheelDatePickerStyle())
