@@ -13,12 +13,12 @@ struct NewUserView: View {
     @State private var usernameFeedback: String = ""
     @State private var usernameIsValid: Bool = false
     @State private var birthDate: Date = {
-            var dateComponents = DateComponents()
-            dateComponents.year = 2005
-            dateComponents.month = 1
-            dateComponents.day = 1
-            return Calendar.current.date(from: dateComponents) ?? Date()
-        }()
+        var dateComponents = DateComponents()
+        dateComponents.year = 2005
+        dateComponents.month = 1
+        dateComponents.day = 1
+        return Calendar.current.date(from: dateComponents) ?? Date()
+    }()
     
     let dateRange: ClosedRange<Date> = {
         let calendar = Calendar.current
@@ -44,9 +44,11 @@ struct NewUserView: View {
                     .font(.footnote)
                     .foregroundStyle(usernameIsValid ? Color.green : Color.red)
                     .frame(maxWidth: .infinity, minHeight: 20, alignment: .topLeading)
+                    .animation(.easeInOut, value: usernameFeedback)
+                    .animation(.easeInOut, value: usernameIsValid)
             }
             .onChange(of: username) { oldValue, newValue in
-                withAnimation {
+//                withAnimation {
                     if newValue.isEmpty {
                         usernameIsValid = false
                         usernameFeedback = "Username cannot be empty."
@@ -60,36 +62,51 @@ struct NewUserView: View {
                         Task { @MainActor in
                             let result = await userViewModel.checkUsernameAvailability(for: newValue)
                             switch result {
-                                case .available:
-                                    usernameFeedback = "Username available."
-                                    usernameIsValid = true
-                                case .unavailable:
-                                    usernameFeedback = "Username not available."
-                                    usernameIsValid = false
-                                case .error:
-                                    usernameFeedback = "An error occurred while checking username availability."
-                                    usernameIsValid = false
+                            case .available:
+                                usernameFeedback = "Username available."
+                                usernameIsValid = true
+                            case .unavailable:
+                                usernameFeedback = "Username not available."
+                                usernameIsValid = false
+                            case .error:
+                                usernameFeedback = "An error occurred while checking username availability."
+                                usernameIsValid = false
                                 
                             }
                         }
                         usernameFeedback = ""
                         usernameIsValid = true
                     }
-                }
+//                }
             }
             
             VStack {
                 Text("Date of birth (used to display relevant Tides):")
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .fixedSize(horizontal: false, vertical: true)
-
+                
                 DatePicker("", selection: $birthDate, in: dateRange, displayedComponents: .date)
                     .datePickerStyle(WheelDatePickerStyle())
                     .padding()
             }
             
             Button {
-            // Create
+                Task { @MainActor in
+                    let status  = await userViewModel.updateNewUserData(username: username, dateOfBirth: birthDate)
+                    switch status {
+                    case .updateSuccess:
+                        print("Successfully updated username and date of birth.")
+                    case .unAuthenticatedUser:
+                        usernameFeedback = "You must be logged in to create a username"
+                        usernameIsValid = false
+                    case .usernameAlreadyExists:
+                        usernameFeedback = "Username was taken before you could create it"
+                        usernameIsValid = false
+                    case .updateFailed:
+                        usernameFeedback = "An error occurred while updating your username"
+                        usernameIsValid = false
+                    }
+                }
             } label: {
                 HStack {
                     Image(systemName: "checkmark")
@@ -100,16 +117,11 @@ struct NewUserView: View {
                 .frame(maxWidth: .infinity)
                 .background(!usernameIsValid ? .gray : .orange.opacity(0.7))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
+                .animation(.easeInOut, value: usernameIsValid)
             }
             .buttonStyle(RemoveHighlightButtonStyle())
         }
         .padding()
-    }
-    
-    private var dateFormatter: DateFormatter {
-        let formatter = DateFormatter()
-        formatter.dateStyle = .long
-        return formatter
     }
 }
 
