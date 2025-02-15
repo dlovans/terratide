@@ -56,4 +56,13 @@ class UserViewModel: ObservableObject {
     func checkUsernameAvailability(for username: String) async -> UsernameAvailability {
         return await userRepository.checkUsernameAvailability(username: username)
     }
+    
+    /// Updates new user's username and date of birth.
+    /// - Parameters:
+    ///   - username: User-provided username.
+    ///   - dateOfBirth: User-provided date of birth.
+    /// - Returns: A value representing the status of this operation.
+    func updateNewUserData(username: String, dateOfBirth: Date) async -> UpdateNewUserStatus {
+        return await userRepository.updateNewUserData(username: username, dateOfBirth: dateOfBirth)
+    }
 }
