@@ -49,4 +49,11 @@ class UserViewModel: ObservableObject {
             userDataLoaded = true
         }
     }
+    
+    /// Checks if a username is available.
+    /// - Parameter username: User-provided username.
+    /// - Returns: An enumeration representing availability of username or error of operation.
+    func checkUsernameAvailability(for username: String) async -> UsernameAvailability {
+        return await userRepository.checkUsernameAvailability(username: username)
+    }
 }
