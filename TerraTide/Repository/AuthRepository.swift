@@ -48,4 +48,30 @@ class AuthRepository {
             return .logoutFailure
         }
     }
+    
+    /// Signs in user with email and password.
+    /// - Parameters:
+    ///   - email: User-provided email
+    ///   - password: User-provided password
+    ///   - completion: A closure that is called when authentication with email and password completes.
+    func signInWithEmailAndPassword(
+        email: String,
+        password: String,
+        completion: @escaping (Result<AuthDataResult, Error>) -> Void
+    ) {
+        Auth.auth().signIn(withEmail: email, password: password) { authResult, error in
+            if let error {
+                completion(.failure(error))
+                return
+            }
+            
+            guard let authResult = authResult else {
+                let authError = NSError(domain: "AuthError", code: -1, userInfo: nil)
+                completion(.failure(authError))
+                return
+            }
+            
+            completion(.success(authResult))
+        }
+    }
 }
