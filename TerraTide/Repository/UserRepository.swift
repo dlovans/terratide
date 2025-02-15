@@ -67,4 +67,20 @@ class UserRepository {
                 completion(userObject)
             }
     }
+    
+    /// Checks if a username is available.
+    /// - Parameter username: User-provided username.
+    /// - Returns: An enumeration representing availability of username or error of operation.
+    func checkUsernameAvailability(username: String) async -> UsernameAvailability {
+        do {
+            let querySnapshot = try await db.collection("users")
+                .whereField("username", isEqualTo: username)
+                .limit(to: 1)
+                .getDocuments()
+            
+            return querySnapshot.documents.isEmpty ? .available : .unavailable
+        } catch {
+            return .error
+        }
+    }
 }
