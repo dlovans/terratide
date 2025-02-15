@@ -9,23 +9,30 @@ import SwiftUI
 
 struct ContentView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
-
-    private var isBanned = false
-    private var isNewUser = false
+    @EnvironmentObject private var userViewModel: UserViewModel
+    
     var body: some View {
         VStack {
-            if authViewModel.initialLoadComplete {
+            if authViewModel.initialLoadComplete && userViewModel.initialLoadComplete  {
                 if !authViewModel.isAuthenticated {
                     AuthView()
                 } else {
-                    if isBanned {
-                        BanHammerView()
-                    } else if isNewUser {
-                        NewUserView()
+                    if userViewModel.userDataLoaded {
+                        if let user = userViewModel.user {
+                            if user.isBanned {
+                                BanHammerView()
+                            } else if user.username.isEmpty {
+                                NewUserView()
+                            } else {
+                                MenuView()
+                            }
+                        }
                     } else {
-                        MenuView()
+                        LoadingView()
                     }
                 }
+            } else {
+                LoadingView()
             }
         }
         .fontDesign(.monospaced)
@@ -34,6 +41,8 @@ struct ContentView: View {
 
 #Preview {
     let authViewModel = AuthViewModel()
+    let userViewModel = UserViewModel()
     ContentView()
         .environmentObject(authViewModel)
+        .environmentObject(userViewModel)
 }
