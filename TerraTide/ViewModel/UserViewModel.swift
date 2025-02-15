@@ -7,7 +7,46 @@
 
 import Foundation
 import FirebaseAuth
+import FirebaseFirestore
 
 class UserViewModel: ObservableObject {
     @Published var user: User? = nil
+    @Published var userDataLoaded: Bool = false
+    @Published var initialLoadComplete: Bool = false
+    
+    private var userRepository = UserRepository()
+    
+    init() {
+        Task { @MainActor in
+            if let _ = Auth.auth().currentUser?.uid {
+                userRepository.attachUserListener() { [weak self] user in
+                    if let user {
+                        self?.user = user
+                    }
+                }
+                self.userDataLoaded = true
+            }
+            
+            self.initialLoadComplete = true
+        }
+    }
+    
+    
+    /// Creates a user document in users collection.
+    /// - Returns: Whether a user document was successfully created (or if it exists, will return true) or not.
+    func createUser() async -> Bool {
+        return await userRepository.createUser()
+    }
+    
+    /// Attaches a listener, listening to a user document of currently authenticated user. Updates User instance.
+    func attachUserListener() {
+        userRepository.attachUserListener() { [weak self] user in
+            if let user {
+                self?.user = user
+            }
+        }
+        if !userDataLoaded {
+            userDataLoaded = true
+        }
+    }
 }
