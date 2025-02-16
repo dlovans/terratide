@@ -9,6 +9,7 @@ import SwiftUI
 
 struct MenuView: View {
     let tideId: String = "123"
+    @EnvironmentObject var locationService: LocationService
     @State private var path: [Route] = []
     @State private var position = ScrollPosition(edge: .leading)
     @State private var currentPage = 1
@@ -18,7 +19,6 @@ struct MenuView: View {
     var body: some View {
         NavigationStack(path: $path) {
             ZStack {
-                
                 TabView(selection: $currentPage) {
                     Tab(value: 0) {
                         ActiveTideListView(path: $path)
@@ -54,6 +54,11 @@ struct MenuView: View {
                 SideMenuView(displayMenu: $displayMenu, currentPage: $currentPage, rotateLines: $rotateLines)
                 HamburgerMenuButtonView(displayMenu: $displayMenu, rotateLines: $rotateLines)
                     .padding()
+            }
+        }
+        .onAppear {
+            Task { @MainActor in
+                locationService.startPeriodicLocationTask()
             }
         }
     }
