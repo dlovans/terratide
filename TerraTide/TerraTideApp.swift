@@ -14,12 +14,16 @@ struct TerraTideApp: App {
     
     @StateObject private var authViewModel = AuthViewModel()
     @StateObject private var userViewModel = UserViewModel()
+    @StateObject private var locationService = LocationService()
+    @StateObject private var chatViewModel = ChatViewModel()
 
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(authViewModel)
                 .environmentObject(userViewModel)
+                .environmentObject(locationService)
+                .environmentObject(chatViewModel)
         }
     }
 }
