@@ -28,7 +28,7 @@ class LocationService: NSObject, CLLocationManagerDelegate, ObservableObject {
     /// Periodically gets and updates user's location, with 1 minute 30 seconds interval.
     func startPeriodicLocationTask() {
         queryTimer?.invalidate()
-        if !locationServicesLoaded { manager.requestLocation()}
+        manager.requestLocation()
         queryTimer = Timer.scheduledTimer(withTimeInterval: 90, repeats: true) { [weak self] _ in
             self?.manager.requestLocation()
         }
