@@ -10,9 +10,12 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var authViewModel: AuthViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
+    @EnvironmentObject private var locationService: LocationService
     
-    let locationEnabled: Bool = false // Emulate location permission status...
     
+    private var locationEnabled: Bool {
+        locationService.locationAuthorized == .authorizedAlways || locationService.locationAuthorized == .authorizedWhenInUse
+    }
     var body: some View {
         VStack {
             if authViewModel.initialLoadComplete && userViewModel.initialLoadComplete  {
@@ -26,9 +29,18 @@ struct ContentView: View {
                             } else if user.username.isEmpty {
                                 NewUserView()
                             } else if !locationEnabled {
-//                                LocationPermissionView()
+                                LocationPermissionView()
                             } else {
-                                MenuView()
+                                if locationService.locationServicesLoaded {
+                                    MenuView()
+                                } else {
+                                    LoadingView()
+                                        .onAppear {
+                                            Task { @MainActor in
+                                                locationService.startPeriodicLocationTask()
+                                            }
+                                        }
+                                }
                             }
                         }
                     } else {
