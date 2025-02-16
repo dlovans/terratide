@@ -7,9 +7,10 @@
 
 import Foundation
 
-struct Message: Identifiable {
+struct Message: Identifiable, Codable {
     let id: String
     let text: String
+    let byUserId: String
     let sender: String
     let timestamp: Date
 }
