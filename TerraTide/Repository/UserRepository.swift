@@ -11,7 +11,6 @@ import FirebaseAuth
 
 class UserRepository {
     let db = Firestore.firestore()
-    var userListener: ListenerRegistration? = nil
     
     
     /// Creates a document in the users collection in Firestore.
@@ -37,15 +36,19 @@ class UserRepository {
     
     /// Attaches a listener to the user document in Firestore, using uid of currently authenticated user.
     /// - Parameter completion: A closure that runs when the listener has been attached and when the user document in Firestore updates. Expects an instance of User model or nil.
-    func attachUserListener(completion: @escaping (User?) -> Void) {
-        guard let userData = Auth.auth().currentUser else { return }
-        self.userListener?.remove()
-        self.userListener = nil
+    func attachUserListener(completion: @escaping (User?) -> Void) -> ListenerRegistration? {
+        guard let userData = Auth.auth().currentUser else { return nil }
         
-        db.collection("users").document(userData.uid)
+        let userListener = db.collection("users").document(userData.uid)
             .addSnapshotListener { documentSnapshot, error in
+                if let error {
+                    print("An error occurred while listening for user updates: \(error)")
+                    completion(nil)
+                    return
+                }
+                
                 guard let document = documentSnapshot else {
-                    print("Error fetching document: \(error!)")
+                    print("Error fetching documents: \(error!)")
                     completion(nil)
                     return
                 }
@@ -66,6 +69,7 @@ class UserRepository {
                 )
                 completion(userObject)
             }
+        return userListener
     }
     
     /// Checks if a username is available.
