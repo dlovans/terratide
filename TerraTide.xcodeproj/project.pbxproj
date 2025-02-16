@@ -9,6 +9,7 @@
 /* Begin PBXBuildFile section */
 		CAB38CEA2D5E585C003C88B6 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CAB38CE92D5E585C003C88B6 /* FirebaseAuth */; };
 		CAB38CEC2D5E5862003C88B6 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = CAB38CEB2D5E5862003C88B6 /* FirebaseFirestore */; };
+		CAB38D902D62187D003C88B6 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CAB38D8F2D62187D003C88B6 /* FirebaseCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -29,6 +30,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				CAB38CEA2D5E585C003C88B6 /* FirebaseAuth in Frameworks */,
+				CAB38D902D62187D003C88B6 /* FirebaseCore in Frameworks */,
 				CAB38CEC2D5E5862003C88B6 /* FirebaseFirestore in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -82,6 +84,7 @@
 			packageProductDependencies = (
 				CAB38CE92D5E585C003C88B6 /* FirebaseAuth */,
 				CAB38CEB2D5E5862003C88B6 /* FirebaseFirestore */,
+				CAB38D8F2D62187D003C88B6 /* FirebaseCore */,
 			);
 			productName = TerraTide;
 			productReference = CACD89982D3FE97700E672D5 /* TerraTide.app */;
@@ -275,11 +278,13 @@
 				DEVELOPMENT_TEAM = AL3LGFWAZ8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TerraTide is entirely based on location. Enable your location to start using it.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -304,11 +309,13 @@
 				DEVELOPMENT_TEAM = AL3LGFWAZ8;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "TerraTide is entirely based on location. Enable your location to start using it.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
 				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = "UIInterfaceOrientationPortrait UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight";
+				IPHONEOS_DEPLOYMENT_TARGET = 18.2;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -366,6 +373,11 @@
 			isa = XCSwiftPackageProductDependency;
 			package = CAB38CE72D5E57FD003C88B6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
 			productName = FirebaseFirestore;
+		};
+		CAB38D8F2D62187D003C88B6 /* FirebaseCore */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = CAB38CE72D5E57FD003C88B6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
+			productName = FirebaseCore;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};
