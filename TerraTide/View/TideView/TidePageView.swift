@@ -147,15 +147,15 @@ struct TideChatView: View {
     @FocusState private var chatFieldIsFocused: Bool
     
     let mockMessages: [Message] = [
-        Message(id: "1", text: "Hey, how's it going?", sender: "Alice", timestamp: Date().addingTimeInterval(-3600)),
-        Message(id: "10", text: "Hey, how's it going?", sender: "Alice", timestamp: Date().addingTimeInterval(-3600)),
+        Message(id: "1", text: "Hey, how's it going?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-3600)),
+        Message(id: "10", text: "Hey, how's it going?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-3600)),
         
-        Message(id: "2", text: "Pretty good! Just working on my app.", sender: "You", timestamp: Date().addingTimeInterval(-3000)),
-        Message(id: "3", text: "Nice! What are you building?", sender: "Alice", timestamp: Date().addingTimeInterval(-2400)),
-        Message(id: "4", text: "A geospatial chat app.", sender: "You", timestamp: Date().addingTimeInterval(-1800)),
-        Message(id: "5", text: "That sounds cool! How does it work?", sender: "Alice", timestamp: Date().addingTimeInterval(-1200)),
-        Message(id: "6", text: "You can create and join activities based on location.", sender: "You", timestamp: Date().addingTimeInterval(-600)),
-        Message(id: "7", text: "Interesting! Does it show people nearby?", sender: "Alice", timestamp: Date())
+        Message(id: "2", text: "Pretty good! Just working on my app.", byUserId: "wdasd", sender: "You", timestamp: Date().addingTimeInterval(-3000)),
+        Message(id: "3", text: "Nice! What are you building?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-2400)),
+        Message(id: "4", text: "A geospatial chat app.", byUserId: "wdasd", sender: "You", timestamp: Date().addingTimeInterval(-1800)),
+        Message(id: "5", text: "That sounds cool! How does it work?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-1200)),
+        Message(id: "6", text: "You can create and join activities based on location.", byUserId: "wdasd", sender: "You", timestamp: Date().addingTimeInterval(-600)),
+        Message(id: "7", text: "Interesting! Does it show people nearby?", byUserId: "wdasd", sender: "Alice", timestamp: Date())
     ]
     
     var body: some View {
