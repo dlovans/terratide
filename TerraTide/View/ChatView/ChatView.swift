@@ -9,19 +9,10 @@ import SwiftUI
 
 struct ChatView: View {
     let chatId: String = "123"
-    @FocusState private var chatFieldIsFocused: Bool
     
-    let mockMessages: [Message] = [
-        Message(id: "1", text: "Hey, how's it going?",byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-3600)),
-        Message(id: "10", text: "Hey, how's it going?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-3600)),
-        
-        Message(id: "2", text: "Pretty good! Just working on my app.", byUserId: "wdasd", sender: "You", timestamp: Date().addingTimeInterval(-3000)),
-        Message(id: "3", text: "Nice! What are you building?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-2400)),
-        Message(id: "4", text: "A geospatial chat app.", byUserId: "wdasd", sender: "You", timestamp: Date().addingTimeInterval(-1800)),
-        Message(id: "5", text: "That sounds cool! How does it work?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-1200)),
-        Message(id: "6", text: "You can create and join activities based on location.", byUserId: "wdasd", sender: "You", timestamp: Date().addingTimeInterval(-600)),
-        Message(id: "7", text: "Interesting! Does it show people nearby?", byUserId: "wdasd", sender: "Alice", timestamp: Date())
-    ]
+    @EnvironmentObject private var locationService: LocationService
+    @EnvironmentObject private var chatViewModel: ChatViewModel
+    @FocusState private var chatFieldIsFocused: Bool
     
     var body: some View {
         ZStack {
@@ -32,7 +23,7 @@ struct ChatView: View {
                 ScrollViewReader { reader in
                     ScrollView {
                         LazyVStack {
-                            ForEach(mockMessages) { message in
+                            ForEach(chatViewModel.geoMessages) { message in
                                 ChatMessageView(
                                     createdBy: message.sender,
                                     messageContent: message.text,
@@ -46,7 +37,7 @@ struct ChatView: View {
                             if newValue {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                                     withAnimation {
-                                        reader.scrollTo(mockMessages.last!.id)
+                                        reader.scrollTo(chatViewModel.geoMessages.last!.id)
                                     }
                                 }
                             }
@@ -62,6 +53,26 @@ struct ChatView: View {
             }
         }
         .padding()
+        .onAppear {
+            if let userLocation = locationService.userLocation {
+                Task { @MainActor in
+                    chatViewModel.attachChatListener(userLocation: userLocation)
+                }
+            }
+        }
+        .onChange(of: locationService.userLocation) { _, newValue in
+            if let userLocation = locationService.userLocation {
+                Task { @MainActor in
+                    chatViewModel.attachChatListener(userLocation: userLocation)
+                }
+            }
+        }
+        .onDisappear {
+            Task { @MainActor in
+                chatViewModel.removeChatListener()
+            }
+            print("Geo chat listener destroyed")
+        }
     }
 }
 
