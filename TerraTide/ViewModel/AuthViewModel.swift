@@ -55,7 +55,6 @@ class AuthViewModel: ObservableObject {
         }
     }
     
-    
     /// Sign in users with email and password.
     /// - Parameters:
     ///   - email: User-provided email
