@@ -17,12 +17,12 @@ class ChatRepository {
     ///   - boundingBox: Tuple representing a bounding box, calculated from a user's position.
     ///   - onUpdate: A closure that runs when fetching messages is completed.
     /// - Returns: Chat messages listener. Use to reset in ChatViewModel to avoid memory leaks.
-    func attachChatListener(for boundingBox: Coordinate, onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
+    func attachChatListener(for userLocation: Coordinate, onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
         let geoChatListener = db.collection("messages")
-            .whereField("longStart", isLessThanOrEqualTo: boundingBox.longitude)
-            .whereField("longEnd", isGreaterThanOrEqualTo: boundingBox.longitude)
-            .whereField("latStart", isLessThanOrEqualTo: boundingBox.latitude)
-            .whereField("latEnd", isGreaterThanOrEqualTo: boundingBox.latitude)
+            .whereField("longStart", isLessThanOrEqualTo: userLocation.longitude)
+            .whereField("longEnd", isGreaterThanOrEqualTo: userLocation.longitude)
+            .whereField("latStart", isLessThanOrEqualTo: userLocation.latitude)
+            .whereField("latEnd", isGreaterThanOrEqualTo: userLocation.latitude)
             .order(by: "timestamp")
             .limit(to: 50)
             .addSnapshotListener { querySnapshot, error in
