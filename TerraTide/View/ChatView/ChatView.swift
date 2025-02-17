@@ -48,7 +48,7 @@ struct ChatView: View {
                     .padding(.top, 7)
                     .defaultScrollAnchor(.bottom)
                     .scrollIndicators(.hidden)
-                    .scrollDismissesKeyboard(.interactively)
+                    .scrollDismissesKeyboard(.immediately)
                 }
                 
                 ChatFieldView(chatFieldIsFocused: $chatFieldIsFocused)
@@ -124,6 +124,9 @@ struct ChatMessageView: View {
 }
 
 struct ChatFieldView: View {
+    @EnvironmentObject private var userViewModel: UserViewModel
+    @EnvironmentObject private var chatViewModel: ChatViewModel
+    @EnvironmentObject private var locationService: LocationService
     @State private var messageContent: String = ""
     var chatFieldIsFocused: FocusState<Bool>.Binding
     
@@ -139,8 +142,30 @@ struct ChatFieldView: View {
                     }
                 }
             Button {
-                // Send message
-                messageContent = ""
+                if !messageContent.isEmpty {
+                    if let user = userViewModel.user, let boundingBox = locationService.boundingBox {
+                        Task { @MainActor in
+                            let status = await chatViewModel.createMessage(
+                                text: self.messageContent,
+                                sender: user.username,
+                                userId: user.id,
+                                boundingBox: boundingBox
+                            )
+                            
+                            switch status {
+                            case .emptyMessage:
+                                print("Message can't be empty.")
+                            case .failedToCreate:
+                                print("Failed to create message.")
+                            case .invalidLocation:
+                                print("Invalid location!")
+                            case .sent:
+                                print("Message was sent!")
+                                messageContent = ""
+                            }
+                        }
+                    }
+                }
             } label: {
                 Image(systemName: "paperplane.fill")
                     .padding(.trailing, 10)
