@@ -37,7 +37,9 @@ struct ChatView: View {
                             if newValue {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                                     withAnimation {
-                                        reader.scrollTo(chatViewModel.geoMessages.last!.id)
+                                        if let lastMessageId = chatViewModel.geoMessages.last?.id {
+                                            reader.scrollTo(lastMessageId)
+                                        }
                                     }
                                 }
                             }
@@ -62,13 +64,13 @@ struct ChatView: View {
         }
         .onChange(of: locationService.userLocation) { _, newValue in
             if let userLocation = locationService.userLocation {
-                Task { @MainActor in
+                Task {
                     chatViewModel.attachChatListener(userLocation: userLocation)
                 }
             }
         }
         .onDisappear {
-            Task { @MainActor in
+            Task {
                 chatViewModel.removeChatListener()
             }
             print("Geo chat listener destroyed")
