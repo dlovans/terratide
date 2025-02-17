@@ -12,6 +12,7 @@ class LocationService: NSObject, CLLocationManagerDelegate, ObservableObject {
     @Published var locationAuthorized: CLAuthorizationStatus = .notDetermined
     @Published var locationServicesLoaded: Bool = false
     @Published var boundingBox: (latStart: Double, latEnd: Double, longStart: Double, longEnd: Double)? = nil
+    @Published var userLocation: Coordinate? = nil
         
     private var queryTimer: Timer?
     private var manager = CLLocationManager()
@@ -79,8 +80,8 @@ class LocationService: NSObject, CLLocationManagerDelegate, ObservableObject {
     
     func locationManager(_ manager: CLLocationManager, didUpdateLocations locations: [CLLocation]) {
         if let lastLocation = locations.last {
-            let coordinate = Coordinate(latitude: lastLocation.coordinate.latitude, longitude: lastLocation.coordinate.longitude)
-            self.boundingBox = self.calculateBoundingBox(center: coordinate)
+            self.userLocation = Coordinate(latitude: lastLocation.coordinate.latitude, longitude: lastLocation.coordinate.longitude)
+            self.boundingBox = self.calculateBoundingBox(center: self.userLocation!)
             if !locationServicesLoaded { locationServicesLoaded = true }
         }
         
