@@ -28,4 +28,11 @@ class ChatViewModel: ObservableObject {
             }
         }
     }
+    
+    
+    /// Destroys geo chat listener.
+    func removeChatListener() {
+        geoChatListener?.remove()
+        geoChatListener = nil
+    }
 }
