@@ -11,7 +11,7 @@ import CoreLocation
 class LocationService: NSObject, CLLocationManagerDelegate, ObservableObject {
     @Published var locationAuthorized: CLAuthorizationStatus = .notDetermined
     @Published var locationServicesLoaded: Bool = false
-    @Published var boundingBox: (latStart: Double, latEnd: Double, longStart: Double, longEnd: Double)? = nil
+    @Published var boundingBox: BoundingBox? = nil
     @Published var userLocation: Coordinate? = nil
         
     private var queryTimer: Timer?
@@ -37,8 +37,8 @@ class LocationService: NSObject, CLLocationManagerDelegate, ObservableObject {
     
     /// Calculates a bounding box that is 20 square kms using user's position.
     /// - Parameter center: Coordination of the user with longitude and latitude.
-    /// - Returns: A tuple representing a bounding box where the center is the user's position.
-    func calculateBoundingBox(center: Coordinate) -> (latStart: Double, latEnd: Double, longStart: Double, longEnd: Double) {
+    /// - Returns: A bounding box calculated from the user's location becoming the center of this box.
+    func calculateBoundingBox(center: Coordinate) -> BoundingBox {
         let distanceInMeters: Double = 20000.0 // 20KM
 
         
@@ -48,12 +48,14 @@ class LocationService: NSObject, CLLocationManagerDelegate, ObservableObject {
         let lonDegreeLength = 111_000.0 * cos(center.latitude * .pi / 180.0)
         let lonChange = distanceInMeters / lonDegreeLength
         
-        let latStart = center.latitude - latChange
-        let latEnd = center.latitude + latChange
-        let longStart = center.longitude - lonChange
-        let longEnd = center.longitude + lonChange
         
-        return (latStart, latEnd, longStart, longEnd)
+        return BoundingBox(
+            longStart: center.longitude - lonChange,
+            longEnd: center.longitude + lonChange,
+            latStart: center.latitude - latChange,
+            latEnd: center.latitude + latChange
+        )
+        
     }
     
     /// Checks user permission for location service.
