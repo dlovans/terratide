@@ -15,6 +15,7 @@ struct MenuView: View {
     @State private var currentPage = 1
     @State private var displayMenu: Bool = false
     @State private var rotateLines: Bool = false
+    @State private var isTransitioning: Bool = false
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -22,17 +23,45 @@ struct MenuView: View {
                 TabView(selection: $currentPage) {
                     Tab(value: 0) {
                         ActiveTideListView(path: $path)
+                            .onAppear {
+                                if currentPage == 0 && isTransitioning {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                        isTransitioning = false
+                                    }
+                                }
+                            }
                     }
                     Tab(value: 1) {
                         AvailableTideListView(path: $path)
+                            .onAppear {
+                                if currentPage == 1 && isTransitioning {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                        isTransitioning = false
+                                    }
+                                }
+                            }
                     }
                     
                     Tab(value: 2) {
                         ChatView()
+                            .onAppear {
+                                if currentPage == 2 && isTransitioning {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                        isTransitioning = false
+                                    }
+                                }
+                            }
                     }
                     
                     Tab(value: 3) {
                         SettingsView()
+                            .onAppear {
+                                if currentPage == 3 && isTransitioning {
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
+                                        isTransitioning = false
+                                    }
+                                }
+                            }
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
@@ -51,9 +80,16 @@ struct MenuView: View {
                     }
                 }
                 
-                SideMenuView(displayMenu: $displayMenu, currentPage: $currentPage, rotateLines: $rotateLines)
+                SideMenuView(displayMenu: $displayMenu, currentPage: $currentPage, rotateLines: $rotateLines, isTransitioning: $isTransitioning)
                 HamburgerMenuButtonView(displayMenu: $displayMenu, rotateLines: $rotateLines)
                     .padding()
+                
+                ZStack{}
+                    .frame(maxWidth: .infinity, maxHeight: .infinity)
+                    .ignoresSafeArea(edges: .all)
+                    .background(.white)
+                    .opacity(isTransitioning ? 0.4 : 0)
+                    .allowsHitTesting(isTransitioning)
             }
         }
         .onAppear {
@@ -68,6 +104,7 @@ struct SideMenuView: View {
     @Binding var displayMenu: Bool
     @Binding var currentPage: Int
     @Binding var rotateLines: Bool
+    @Binding var isTransitioning: Bool
     
     var body: some View {
         ZStack {
@@ -76,6 +113,7 @@ struct SideMenuView: View {
                     VStack {
                         VStack {
                             Button {
+                                isTransitioning = true
                                 withAnimation {
                                     displayMenu = false
                                     rotateLines = false
@@ -104,6 +142,7 @@ struct SideMenuView: View {
                             }
                             
                             Button {
+                                isTransitioning = true
                                 withAnimation {
                                     displayMenu = false
                                     rotateLines = false
@@ -131,6 +170,7 @@ struct SideMenuView: View {
                             }
                             
                             Button {
+                                isTransitioning = true
                                 withAnimation {
                                     displayMenu = false
                                     rotateLines = false
@@ -156,6 +196,7 @@ struct SideMenuView: View {
                             }
                             
                             Button {
+                                isTransitioning = true
                                 withAnimation {
                                     displayMenu = false
                                     rotateLines = false
@@ -241,7 +282,7 @@ struct HamburgerMenuButtonView: View {
                                 .clipShape(RoundedRectangle(cornerRadius: 10))
                                 .rotationEffect(rotateLines ? Angle(degrees: -45): .zero, anchor: .center)
                                 .offset(y: rotateLines ? -11: 0)
-
+                            
                         }
                         .frame(width: 40, height: 3.5)
                     }
