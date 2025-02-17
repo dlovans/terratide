@@ -9,6 +9,7 @@ import Foundation
 import FirebaseFirestore
 
 class ChatViewModel: ObservableObject {
+    @Published var chatHasLoaded: Bool = false
     @Published var geoMessages: [Message] = []
     
     private var chatRepositoy = ChatRepository()
@@ -26,13 +27,26 @@ class ChatViewModel: ObservableObject {
                 print("Something went wrong while fetching geo messages")
                 self?.geoMessages = []
             }
+            self?.chatHasLoaded = true
         }
     }
     
-    
     /// Destroys geo chat listener.
     func removeChatListener() {
+        self.chatHasLoaded = false
         geoChatListener?.remove()
         geoChatListener = nil
+    }
+    
+    
+    /// Calls a method to create a message in database.
+    /// - Parameters:
+    ///   - text: Message content.
+    ///   - sender: Username of sender.
+    ///   - userId: User ID of sender.
+    ///   - boundingBox: Geospatial bounding box for this message.
+    /// - Returns: Status of message operation.
+    func createMessage(text: String, sender: String, userId: String, boundingBox: BoundingBox?) async -> MessageStatus {
+        return await chatRepositoy.createMessage(with: text, by: sender, with: userId, boundingBox: boundingBox)
     }
 }
