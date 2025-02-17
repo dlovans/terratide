@@ -58,7 +58,8 @@ class UserRepository {
                     return
                 }
                 
-                let userObject = User(id: data["id"] as? String ?? "",
+                let userObject = User(
+                            id: document.documentID,
                             username: data["username"] as? String ?? "",
                             blockedUserIds: data["blockedUserIds"] as? [String] ?? [],
                             dateOfBirth: data["dateOfBirth"] as? Date ?? Date(),
