@@ -6,9 +6,10 @@
 //
 
 import Foundation
+import FirebaseFirestore
 
 struct Message: Identifiable, Codable {
-    let id: String
+    @DocumentID var id: String?
     let text: String
     let byUserId: String
     let sender: String
