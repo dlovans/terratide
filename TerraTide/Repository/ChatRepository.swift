@@ -56,4 +56,36 @@ class ChatRepository {
         
         return geoChatListener
     }
+    
+    /// Create a message document in the database.
+    /// - Parameters:
+    ///   - text: Message content.
+    ///   - sender: Username of sender.
+    ///   - userId: User ID of sender.
+    ///   - boundingBox: Geospatial bounding box for this message.
+    /// - Returns: Status of message operation.
+    func createMessage(with text: String, by sender: String, with userId: String, boundingBox: BoundingBox?) async -> MessageStatus {
+        if text.isEmpty {
+            return .emptyMessage
+        }
+        
+        guard let boundingBox else { return .invalidLocation }
+        
+        do {
+            try await db.collection("messages").addDocument(data: [
+                "text": text,
+                "sender": sender,
+                "byUserId": userId,
+                "timestamp": Date(),
+                "longStart": boundingBox.longStart,
+                "longEnd": boundingBox.longEnd,
+                "latStart": boundingBox.latStart,
+                "latEnd": boundingBox.latEnd
+            ])
+            return .sent
+        } catch {
+            print("An error occurred while creating a message: \(error)")
+            return .failedToCreate
+        }
+    }
 }
