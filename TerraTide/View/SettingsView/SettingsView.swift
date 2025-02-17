@@ -48,10 +48,8 @@ struct SettingsView: View {
                 Button {
                     if authViewModel.signOut() == .logoutFailure {
                         errorWorkItem?.cancel()
-                        withAnimation {
-                            errorMessage = "Failed to logout. Restart app or try again later."
-                            displayErrorMessage = true
-                        }
+                        errorMessage = "Failed to logout. Restart app or try again later."
+                        displayErrorMessage = true
                         
                         errorWorkItem = DispatchWorkItem {
                             withAnimation {
@@ -88,7 +86,9 @@ struct SettingsView: View {
                 .font(.caption)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .offset(x: displayErrorMessage ? 0 : -500)
+                .animation(.easeInOut, value: displayErrorMessage)
                 .frame(maxHeight: .infinity, alignment: .bottom)
+                .opacity(displayErrorMessage ? 1 : 0)
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .padding()
