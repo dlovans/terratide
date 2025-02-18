@@ -1,5 +1,5 @@
 //
-//  TideRepository.swift
+//  SingleTideRepository.swift
 //  TerraTide
 //
 //  Created by Dlovan Sharif on 2025-02-16.
@@ -8,7 +8,7 @@
 import Foundation
 import FirebaseFirestore
 
-class TideRepository {
+class SingleTideRepository {
     let db = Firestore.firestore()
     
     /// Creates a Tide document in Firestore.

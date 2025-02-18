@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct TidePageView: View {
-    @EnvironmentObject private var tideViewModel: TideViewModel
+    @EnvironmentObject private var tideViewModel: SingleTideViewModel
     @Binding var path: [Route]
     @State private var displayChat: Bool = true
     
@@ -65,7 +65,7 @@ struct TidePageView: View {
                 if !tideViewModel.tideHasLoaded {
                     tideViewModel.attachTideListener(tideId: tideId)
                 }
-                
+                // TODO: Declare Tide-specific chat listener.
 //                if !tideViewMode.tideChatHasLoaded {
 //                    tideViewModel.attachTideChatListener(tideId: tideId)
 //                }
@@ -75,7 +75,7 @@ struct TidePageView: View {
 }
 
 struct TideDetailsView: View {
-    @EnvironmentObject private var tideViewModel: TideViewModel
+    @EnvironmentObject private var tideViewModel: SingleTideViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
     
     var body: some View {

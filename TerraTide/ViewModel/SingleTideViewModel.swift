@@ -1,5 +1,5 @@
 //
-//  TideViewModel.swift
+//  SingleTideViewModel.swift
 //  TerraTide
 //
 //  Created by Dlovan Sharif on 2025-02-16.
@@ -8,8 +8,8 @@
 import Foundation
 import FirebaseFirestore
 
-class TideViewModel: ObservableObject {
-    let tideRepository = TideRepository()
+class SingleTideViewModel: ObservableObject {
+    let tideRepository = SingleTideRepository()
     @Published var tideHasLoaded: Bool = false
     @Published var tideChatHasLoaded: Bool = false
     @Published var tide: Tide? = nil

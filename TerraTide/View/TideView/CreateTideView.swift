@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct CreateTideView: View {
-    @EnvironmentObject private var tideViewModel: TideViewModel
+    @EnvironmentObject private var tideViewModel: SingleTideViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
     
     @Binding var path: [Route]

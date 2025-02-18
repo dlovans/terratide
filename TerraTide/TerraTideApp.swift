@@ -16,7 +16,7 @@ struct TerraTideApp: App {
     @StateObject private var userViewModel = UserViewModel()
     @StateObject private var locationService = LocationService()
     @StateObject private var chatViewModel = ChatViewModel()
-    @StateObject private var tideViewModel = TideViewModel()
+    @StateObject private var tideViewModel = SingleTideViewModel()
 
     var body: some Scene {
         WindowGroup {
