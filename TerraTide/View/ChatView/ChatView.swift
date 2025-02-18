@@ -151,7 +151,7 @@ struct ChatFieldView: View {
                                 userId: user.id,
                                 boundingBox: boundingBox
                             )
-                            
+                            // TODO: Display error message on response.
                             switch status {
                             case .emptyMessage:
                                 print("Message can't be empty.")
