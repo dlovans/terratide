@@ -36,13 +36,13 @@ class TideRepository {
         
         do {
             let result = try await db.collection("tides").addDocument(data: [
-                "byUserId": byUserID,
-                "byUsername": byUsername,
-                "tideTitle": tideTitle,
-                "tideDescription": tideDescription,
+                "creatorId": byUserID,
+                "creatorUsername": byUsername,
+                "title": tideTitle,
+                "description": tideDescription,
                 "tideGroupSize": tideGroupSize,
                 "createdAt": Timestamp(date: Date()),
-                "memberIds": [byUserID]
+                "memberIds": [byUserID: byUsername]
             ])
             
             if result.documentID.isEmpty {
@@ -55,5 +55,40 @@ class TideRepository {
             print("Failed to create a Tide")
             return .failed
         }
+    }
+    
+    /// Fetches a Tide and attaches a document listener.
+    /// - Parameters:
+    ///   - tideId: ID of Tide to fetch.
+    ///   - onUpdate: A closure that is called when a Tide document is fetched or the document is updated in the database.
+    /// - Returns: A Tide document listener. Use to reset listener in TideViewModel to avoid memory leaks.
+    func attachTideListener(tideId: String, onUpdate: @escaping(Tide?) -> Void) -> ListenerRegistration? {
+        if tideId.isEmpty {
+            onUpdate(nil)
+            return nil
+        }
+        
+        let listener = db.collection("tides").document(tideId).addSnapshotListener { documentSnapshot, error in
+            if let error {
+                print("Failed to fetch single Tide document.\(error.localizedDescription)")
+                onUpdate(nil)
+                return
+            }
+            
+            guard let document = documentSnapshot, document.exists else {
+                print("Tide document does not exist.")
+                onUpdate(nil)
+                return
+            }
+            
+            do {
+                let tide = try document.data(as: Tide.self)
+                onUpdate(tide)
+            } catch {
+                print("Failed to convert document to Tide object.")
+                onUpdate(nil)
+            }
+        }
+        return listener
     }
 }
