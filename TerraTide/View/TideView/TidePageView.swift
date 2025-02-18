@@ -8,64 +8,75 @@
 import SwiftUI
 
 struct TidePageView: View {
+    @EnvironmentObject private var tideViewModel: TideViewModel
     @Binding var path: [Route]
     @State private var displayChat: Bool = true
     
-    let myUserId = "Dlovan"
     let tideId: String
-    let tide = Tide(id: "0", title: "Dlovan's Psycho Game", description: "Jag ska irritera dig. Första person som blir arg är en n00b.", creatorId: "Dlovan", participants: 9999, maxParticipants: 10000, joinedUsers: ["Dlovan", "Ibn"])
     
     var body: some View {
         ZStack {
-            VStack {
-                HStack {
-                    Button {
-                        path.removeAll { $0 == .tide(tideId) }
-                    } label: {
-                        Image(systemName: "arrow.backward")
-                            .foregroundStyle(.black)
-                    }
-                    .frame(width: 50, height: 30, alignment: .leading)
-                    
-                    Spacer()
-                    Text(tide.title)
-                    Spacer()
-                    
-                    Group {
+            if !tideViewModel.tideHasLoaded && !tideViewModel.tideChatHasLoaded {
+                LoadingView()
+            } else {
+                VStack {
+                    HStack {
                         Button {
-                            withAnimation {
-                                displayChat.toggle()
-                            }
+                            path.removeAll { $0 == .tide(tideId) }
                         } label: {
-                            Image(systemName: displayChat ? "gear" : "bubble.fill")
-                                .foregroundStyle(.orange)
+                            Image(systemName: "arrow.backward")
+                                .foregroundStyle(.black)
                         }
+                        .frame(width: 50, height: 30, alignment: .leading)
+                        
+                        Spacer()
+                        Text(tideViewModel.tide?.title ?? "")
+                        Spacer()
+                        
+                        Group {
+                            Button {
+                                withAnimation {
+                                    displayChat.toggle()
+                                }
+                            } label: {
+                                Image(systemName: displayChat ? "gear" : "bubble.fill")
+                                    .foregroundStyle(.orange)
+                            }
+                        }
+                        .frame(width: 50, height: 30, alignment: .trailing)
                     }
-                    .frame(width: 50, height: 30, alignment: .trailing)
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                
-                if displayChat {
-                    VStack {
-                        TideChatView()
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    
+                    if displayChat {
+                        VStack {
+                            TideChatView()
+                        }
+                    } else {
+                        TideDetailsView()
+                        ShareTideView()
                     }
-                } else {
-                    TideDetailsView(tideId: tide.id)
-                    ShareTideView()
                 }
             }
         }
         .padding()
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            Task { @MainActor in
+                if !tideViewModel.tideHasLoaded {
+                    tideViewModel.attachTideListener(tideId: tideId)
+                }
+                
+//                if !tideViewMode.tideChatHasLoaded {
+//                    tideViewModel.attachTideChatListener(tideId: tideId)
+//                }
+            }
+        }
     }
 }
 
 struct TideDetailsView: View {
-    let myUserId = "Dlovan"
-    let tideId: String
-    let tide = Tide(id: "0", title: "Dlovan's Psycho Game", description: "Jag ska irritera dig. Första person som blir arg är en n00b.", creatorId: "Dlovan", participants: 9999, maxParticipants: 10000, joinedUsers: ["Dlovan", "Ibn", "Muslim", "Mumin"])
-    
-    @State private var showReportUserSheet: Bool = false
+    @EnvironmentObject private var tideViewModel: TideViewModel
+    @EnvironmentObject private var userViewModel: UserViewModel
     
     var body: some View {
         VStack {
@@ -78,12 +89,12 @@ struct TideDetailsView: View {
                 .frame(maxWidth: .infinity)
                 
                 HStack {
-                    Text("Number of participants:")
+                    Text("Tide Size:")
                     Spacer()
-                    Text("\(tide.participants)/\(tide.maxParticipants)")
+                    Text("\(tideViewModel.tide?.memberIds.count ?? 1)/\(tideViewModel.tide?.tideGroupSize ?? 10)")
                 }
                 
-                Text(tide.description)
+                Text(tideViewModel.tide?.description ?? "")
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Divider()
@@ -93,25 +104,14 @@ struct TideDetailsView: View {
                         .frame(maxWidth: .infinity, alignment: .leading)
                     ScrollView {
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 100)), count: 3), spacing: 10) {
-                            ForEach(tide.joinedUsers, id: \.self) { username in
-                                Text(username)
-                                    .fixedSize(horizontal: true , vertical: false)
-                                    .padding(10)
-                                    .background(myUserId == username ? .black : .orange.opacity(0.3))
-                                    .foregroundStyle(myUserId == username ? .white : .black)
-                                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                                    .contextMenu {
-                                        Button {
-                                            showReportUserSheet = true
-                                        } label: {
-                                            HStack {
-                                                Text("Report")
-                                            }
-                                        }
+                
+                            TideMemberView(userId: tideViewModel.tide?.creatorId ?? "", username: tideViewModel.tide?.creatorUsername ?? "")
+                            if let memberIds = tideViewModel.tide?.memberIds {
+                                ForEach(memberIds.keys.sorted().filter { $0 != tideViewModel.tide?.creatorId ?? ""}, id: \.self) { memberId in
+                                    if let memberUsername = memberIds[memberId] {
+                                        TideMemberView(userId: memberId, username: memberUsername)
                                     }
-                                    .sheet(isPresented: $showReportUserSheet) {
-                                        Text(username)
-                                    }
+                                }
                             }
                         }
                     }
@@ -126,6 +126,36 @@ struct TideDetailsView: View {
             }
         }
     }
+}
+
+struct TideMemberView: View {
+    @EnvironmentObject private var userViewModel: UserViewModel
+    @State private var showReportUserSheet: Bool = false
+
+    let userId: String
+    let username: String
+    
+    var body: some View {
+        Text(username)
+            .fixedSize(horizontal: true , vertical: false)
+            .padding(10)
+            .background(userViewModel.user?.id == userId ? .black : .orange.opacity(0.3))
+            .foregroundStyle(userViewModel.user?.id == userId ? .white : .black)
+            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .contextMenu {
+                Button {
+                    showReportUserSheet = true
+                } label: {
+                    HStack {
+                        Text("Report")
+                    }
+                }
+            }
+            .sheet(isPresented: $showReportUserSheet) {
+                Text(username)
+            }
+    }
+    
 }
 
 struct ShareTideView: View {
