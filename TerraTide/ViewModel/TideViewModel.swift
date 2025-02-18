@@ -6,9 +6,16 @@
 //
 
 import Foundation
+import FirebaseFirestore
 
 class TideViewModel: ObservableObject {
     let tideRepository = TideRepository()
+    @Published var tideHasLoaded: Bool = false
+    @Published var tideChatHasLoaded: Bool = false
+    @Published var tide: Tide? = nil
+    @Published var tideListener: ListenerRegistration? = nil
+    
+    private var listener: ListenerRegistration? = nil
     
     /// Calls method in TideRepository that creates a Tide in Firestore.
     /// - Parameters:
@@ -26,5 +33,31 @@ class TideViewModel: ObservableObject {
         tideGroupSize: Int
     ) async -> TideCreationStatus {
         return await tideRepository.createTide(byUserID: byUserID, byUsername: byUsername, tideTitle: tideTitle, tideDescription: tideDescription, tideGroupSize: tideGroupSize)
+    }
+    
+    /// Attaches a Tide listener.
+    /// - Parameter tideId: ID of Tide to fetch and listen to.
+    func attachTideListener(tideId: String) { // TODO: Consider returning status if Tide fails to load.
+        let newTideListener = tideRepository.attachTideListener(tideId: tideId) { [weak self] tide in
+            if let tide {
+                self?.tide = tide
+                
+            } else {
+                print("Something went wrong while fetching Tide data.")
+                self?.tide = nil
+            }
+            self?.tideHasLoaded = true
+        }
+        
+        self.tideListener?.remove()
+        self.tideListener = newTideListener
+    }
+    
+    /// Destroys Tide listener.
+    func removeTideListener() {
+        self.tideHasLoaded = false
+        self.tideListener?.remove()
+        self.tideListener = nil
+        self.tide = nil
     }
 }
