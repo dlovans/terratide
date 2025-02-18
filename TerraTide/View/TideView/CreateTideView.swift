@@ -8,6 +8,9 @@
 import SwiftUI
 
 struct CreateTideView: View {
+    @EnvironmentObject private var tideViewModel: TideViewModel
+    @EnvironmentObject private var userViewModel: UserViewModel
+    
     @Binding var path: [Route]
     
     @State private var title: String = ""
@@ -21,7 +24,11 @@ struct CreateTideView: View {
     @State private var offsetDesc: CGFloat = 0
     
     @FocusState private var participantsIsFocused: Bool
-        
+    
+    private var tideIsValid: Bool {
+        !title.isEmpty && maxParticipants > 1 && maxParticipants <= 10000 && !description.isEmpty
+    }
+    
     var body: some View {
         ZStack {
             Color.white
@@ -41,7 +48,7 @@ struct CreateTideView: View {
                             .foregroundStyle(.black)
                     }
                     .frame(width: 50, height: 30, alignment: .leading)
-
+                    
                     Spacer()
                     Text("Create a Tide!")
                         .font(.title2)
@@ -71,7 +78,7 @@ struct CreateTideView: View {
                     .padding(0)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
-
+                
                 ZStack {
                     TextField("", text: $title)
                         .padding()
@@ -143,20 +150,48 @@ struct CreateTideView: View {
                 }
                 
                 Button {
-                    // Create button. Creates tide, returns TideID, appending id path to Route
-                    withAnimation {
-                        path.removeAll { $0 == .general("createTide") }
-                        path.append(.tide("0"))
+                    Task { @MainActor in
+                        if tideIsValid {
+                            Task { @MainActor in
+                                let result = await tideViewModel.createTide(
+                                    byUserID: self.userViewModel.user?.id ?? "",
+                                    byUsername: self.userViewModel.user?.username ?? "",
+                                    tideTitle: self.title,
+                                    tideDescription: self.description,
+                                    tideGroupSize: self.maxParticipants
+                                )
+                                
+                                // TODO: Display error message on response.
+                                switch result {
+                                case .created(let newTideID):
+                                    withAnimation {
+                                        path.removeAll { $0 == .general("createTide") }
+                                        path.append(.tide(newTideID))
+                                    }
+                                case .missingCredentials:
+                                    print("Missing user credentials!")
+                                case .invalidData:
+                                    print("Tide data is invalid. Couldn't create Tide")
+                                case .missingTideId:
+                                    print("Tide was created but no Tide ID was returned!")
+                                case .failed:
+                                    print("Something went wrong while creating the Tide!")
+                                }
+                            }
+                        }
                     }
+
                 } label: {
                     Text("Three is a company")
                         .foregroundStyle(.white)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(.orange)
+                        .background(!tideIsValid ? .gray : .orange)
                         .clipShape(RoundedRectangle(cornerRadius: 10))
+                        .animation(.easeInOut, value: tideIsValid)
                 }
                 .buttonStyle(RemoveHighlightButtonStyle())
+                .disabled(!tideIsValid)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
