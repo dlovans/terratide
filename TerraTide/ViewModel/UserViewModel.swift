@@ -22,7 +22,6 @@ class UserViewModel: ObservableObject {
         Task { @MainActor in
             if let _ = Auth.auth().currentUser?.uid {
                 self.userListener?.remove()
-                self.userListener = nil
                 self.userListener = userRepository.attachUserListener() { [weak self] user in
                     if let user {
                         self?.user = user
@@ -44,10 +43,7 @@ class UserViewModel: ObservableObject {
     
     /// Attaches a listener, listening to a user document of currently authenticated user. Updates User instance.
     func attachUserListener() {
-        self.userListener?.remove()
-        self.userListener = nil
-        
-        self.userListener = userRepository.attachUserListener() { [weak self] user in
+        let newUserListener = userRepository.attachUserListener() { [weak self] user in
             if let user {
                 self?.user = user
             }
@@ -55,6 +51,8 @@ class UserViewModel: ObservableObject {
         if !userDataLoaded {
             userDataLoaded = true
         }
+        self.userListener?.remove()
+        self.userListener = newUserListener
     }
     
     /// Checks if a username is available.
