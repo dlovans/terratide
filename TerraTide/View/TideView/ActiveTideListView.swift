@@ -11,9 +11,9 @@ struct ActiveTideListView: View {
     @Binding var path: [Route]
     
     let tides: [Tide] = [
-        Tide(id: "0", title: "Dlovan's Psycho Game", description: "Jag ska irritera dig. Första person som blir arg är en n00b.", creatorId: "Dlovan", participants: 9999, maxParticipants: 10000, joinedUsers: ["Dlovan", "Ibn"]),
-        Tide(id: "1", title: "Chess Masters", description: "Tävling för schackspelare", creatorId: "Magnus", participants: 50, maxParticipants: 100, joinedUsers: ["Dlovan", "Ibn"]),
-        Tide(id: "2", title: "Swift Developers", description: "Diskutera Swift och iOS", creatorId: "AppleDev", participants: 120, maxParticipants: 500, joinedUsers: ["Dlovan", "Ibn"])
+        Tide(id: "0", title: "Dlovan's Psycho Game", description: "Jag ska irritera dig. Första person som blir arg är en n00b.", creatorId: "Dlovan", creatorUsername: "dsf", tideGroupSize: 10000, memberIds: ["Dlovan":"dlo", "Ibn":"asr"]),
+        Tide(id: "1", title: "Chess Masters", description: "Tävling för schackspelare", creatorId: "Magnus", creatorUsername: "asds", tideGroupSize: 100, memberIds: ["Dlovan":"dlo", "Ibn":"asr"]),
+        Tide(id: "2", title: "Swift Developers", description: "Diskutera Swift och iOS", creatorId: "AppleDev", creatorUsername: "asdsad", tideGroupSize: 500, memberIds: ["Dlovan":"dlo", "Ibn":"asr"])
     ]
     
     var body: some View {
@@ -26,12 +26,12 @@ struct ActiveTideListView: View {
                     LazyVStack {
                         ForEach(tides, id: \.self) { tide in
                             ActiveTideItemView(
-                                id: tide.id,
+                                id: tide.id!,
                                 creatorId: tide.creatorId,
                                 title: tide.title,
                                 description: tide.description,
-                                participants: tide.participants,
-                                maxParticipants: tide.maxParticipants,
+                                participants: tide.memberIds.count,
+                                maxParticipants: tide.tideGroupSize,
                                 path: $path
                             )
                         }
