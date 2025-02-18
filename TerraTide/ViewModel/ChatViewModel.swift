@@ -17,10 +17,8 @@ class ChatViewModel: ObservableObject {
     
     /// Attaches a listener to chat messages.
     /// - Parameter userLocation: User location with longitude and latitude values.
-    func attachChatListener(userLocation: Coordinate) {
-        self.geoChatListener?.remove()
-        self.geoChatListener = nil
-        self.geoChatListener = chatRepositoy.attachChatListener(for: userLocation) { [weak self] messages in
+    func attachChatListener(userLocation: Coordinate) { // TODO: Consider returning status if messages fail to load.
+        let newGeoChatListener = chatRepositoy.attachChatListener(for: userLocation) { [weak self] messages in
             if let messages {
                 self?.geoMessages = messages
             } else {
@@ -29,13 +27,16 @@ class ChatViewModel: ObservableObject {
             }
             self?.chatHasLoaded = true
         }
+        self.geoChatListener?.remove()
+        self.geoChatListener = newGeoChatListener
     }
     
     /// Destroys geo chat listener.
     func removeChatListener() {
         self.chatHasLoaded = false
-        geoChatListener?.remove()
-        geoChatListener = nil
+        self.geoChatListener?.remove()
+        self.geoChatListener = nil
+        self.geoMessages = []
     }
     
     
