@@ -13,6 +13,7 @@ struct Tide: Identifiable, Hashable, Equatable, Codable {
     let description: String
     let creatorId: String
     let creatorUsername: String
-    let tideGroupSize: Int
+    let participantCount: Int
+    let maxParticipants: Int
     let memberIds: [String: String]
 }

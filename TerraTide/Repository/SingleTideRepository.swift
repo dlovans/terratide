@@ -24,13 +24,13 @@ class SingleTideRepository {
         byUsername: String,
         tideTitle: String,
         tideDescription: String,
-        tideGroupSize: Int
+        maxParticipants: Int
     ) async -> TideCreationStatus {
         if byUserID.isEmpty || byUsername.isEmpty {
             return .missingCredentials
         }
         
-        if tideTitle.isEmpty || tideDescription.isEmpty || tideGroupSize < 2 || tideGroupSize > 10000 {
+        if tideTitle.isEmpty || tideDescription.isEmpty || maxParticipants < 2 || maxParticipants > 10000 {
             return .invalidData
         }
         
@@ -40,7 +40,8 @@ class SingleTideRepository {
                 "creatorUsername": byUsername,
                 "title": tideTitle,
                 "description": tideDescription,
-                "tideGroupSize": tideGroupSize,
+                "participantCount": 1,
+                "maxParticipants": maxParticipants,
                 "createdAt": Timestamp(date: Date()),
                 "memberIds": [byUserID: byUsername]
             ])

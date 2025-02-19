@@ -91,7 +91,7 @@ struct TideDetailsView: View {
                 HStack {
                     Text("Tide Size:")
                     Spacer()
-                    Text("\(tideViewModel.tide?.memberIds.count ?? 1)/\(tideViewModel.tide?.tideGroupSize ?? 10)")
+                    Text("\(tideViewModel.tide?.memberIds.count ?? 1)/\(tideViewModel.tide?.maxParticipants ?? 10)")
                 }
                 
                 Text(tideViewModel.tide?.description ?? "")
