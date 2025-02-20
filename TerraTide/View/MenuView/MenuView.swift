@@ -16,6 +16,7 @@ struct MenuView: View {
     @State private var displayMenu: Bool = false
     @State private var rotateLines: Bool = false
     @State private var isTransitioning: Bool = false
+    @FocusState var chatFieldIsFocused: Bool
     
     var body: some View {
         NavigationStack(path: $path) {
@@ -43,7 +44,7 @@ struct MenuView: View {
                     }
                     
                     Tab(value: 2) {
-                        ChatView()
+                        ChatView(chatFieldIsFocused: $chatFieldIsFocused)
                             .onAppear {
                                 if currentPage == 2 && isTransitioning {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -65,6 +66,13 @@ struct MenuView: View {
                     }
                 }
                 .tabViewStyle(.page(indexDisplayMode: .never))
+                .onChange(of: currentPage) { _, _ in
+                    if chatFieldIsFocused {
+                        withAnimation {
+                            chatFieldIsFocused = false
+                        }
+                    }
+                }
                 .navigationDestination(for: Route.self) { route in
                     switch route {
                     case let .general(routeName):
