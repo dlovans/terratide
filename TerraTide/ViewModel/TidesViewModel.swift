@@ -17,8 +17,8 @@ class TidesViewModel: ObservableObject {
     
     /// Call method in TidesRepository to fetch tides and attach listener to app.
     /// - Parameter userLocation: User location with longitude and latitude.
-    func attachTidesListener(for userLocation: Coordinate) {
-        let newTidesListener = tidesRepository.attachTidesListener(for: userLocation) { tides in
+    func attachTidesListener(for userLocation: Coordinate, userId: String) {
+        let newTidesListener = tidesRepository.attachTidesListener(for: userLocation, userId: userId) { tides in
             if let tides {
                 self.tides = tides
             } else {
