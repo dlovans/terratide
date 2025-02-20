@@ -60,13 +60,13 @@ struct AvailableTideListView: View {
         .onAppear {
             Task { @MainActor in
                 if let userLocation = locationService.userLocation, let userId = userViewModel.user?.id {
-                    tidesViewModel.attachTidesListener(for: userLocation, userId: userId)
+                    tidesViewModel.attachAvailableTidesListener(for: userLocation, userId: userId)
                 }
             }
         }
         .onDisappear {
             Task { @MainActor in
-                tidesViewModel.removeTidesListener()
+                tidesViewModel.removeAvailableTidesListener()
             }
         }
     }

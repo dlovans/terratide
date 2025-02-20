@@ -11,12 +11,12 @@ import FirebaseFirestore
 class TidesRepository {
     let db = Firestore.firestore()
     
-    /// Fetches Tides around the user's location and attaches a listener.
+    /// Fetches available Tides around the user's location and attaches a listener.
     /// - Parameters:
     ///   - userLocation: Location of the user.
     ///   - onUpdate: A closure that is executed when the fetching and attaching the listener is completed.
     /// - Returns: A listener, listening on the `tides` collection documents.
-    func attachTidesListener(for userLocation: Coordinate, userId: String, onUpdate: @escaping ([Tide]?) -> Void) -> ListenerRegistration? {
+    func attachAvailableTidesListener(for userLocation: Coordinate, userId: String, onUpdate: @escaping ([Tide]?) -> Void) -> ListenerRegistration? {
         let listener = db.collection("tides")
             .whereField("active", isEqualTo: true)
             .whereField("longStart", isLessThanOrEqualTo: userLocation.longitude)
