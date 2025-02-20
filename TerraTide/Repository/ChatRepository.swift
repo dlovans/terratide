@@ -23,6 +23,7 @@ class ChatRepository {
             .whereField("longEnd", isGreaterThanOrEqualTo: userLocation.longitude)
             .whereField("latStart", isLessThanOrEqualTo: userLocation.latitude)
             .whereField("latEnd", isGreaterThanOrEqualTo: userLocation.latitude)
+            .whereField("timestamp", isGreaterThanOrEqualTo: Date().addingTimeInterval(-(12 * 60 * 60)))
             .order(by: "timestamp")
             .limit(to: 50)
             .addSnapshotListener { querySnapshot, error in
