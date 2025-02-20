@@ -18,7 +18,7 @@ class TidesRepository {
     /// - Returns: A listener, listening on the `tides` collection documents.
     func attachTidesListener(for userLocation: Coordinate, onUpdate: @escaping ([Tide]?) -> Void) -> ListenerRegistration? {
         let listener = db.collection("tides")
-            .whereField("createdAt", isLessThan: Date().addingTimeInterval(2 * 60 * 60)) // Each Tide has 2h visibility in bounding box area.
+            .whereField("active", isEqualTo: true)
             .whereField("longStart", isLessThanOrEqualTo: userLocation.longitude)
             .whereField("longEnd", isGreaterThanOrEqualTo: userLocation.longitude)
             .whereField("latStart", isLessThanOrEqualTo: userLocation.latitude)
