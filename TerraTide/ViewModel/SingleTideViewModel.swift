@@ -9,7 +9,7 @@ import Foundation
 import FirebaseFirestore
 
 class SingleTideViewModel: ObservableObject {
-    let tideRepository = SingleTideRepository()
+    let singleTideRepository = SingleTideRepository()
     @Published var tideHasLoaded: Bool = false
     @Published var tideChatHasLoaded: Bool = false
     @Published var tide: Tide? = nil
@@ -33,13 +33,23 @@ class SingleTideViewModel: ObservableObject {
         maxParticipants: Int,
         boundingBox: BoundingBox
     ) async -> TideCreationStatus {
-        return await tideRepository.createTide(byUserID: byUserID, byUsername: byUsername, tideTitle: tideTitle, tideDescription: tideDescription, maxParticipants: maxParticipants, boundingBox: boundingBox)
+        return await singleTideRepository.createTide(byUserID: byUserID, byUsername: byUsername, tideTitle: tideTitle, tideDescription: tideDescription, maxParticipants: maxParticipants, boundingBox: boundingBox)
+    }
+    
+    /// Joins a Tide.
+    /// - Parameters:
+    ///   - tideId: ID of the Tide to join.
+    ///   - userId: ID of the user attempting to join Tide.
+    ///   - username: Username of the user attempting to join Tide.
+    /// - Returns: Status of join attempt.
+    func joinTide(tideId: String, userId: String, username: String) async -> JoinTideStatus {
+        return await singleTideRepository.joinTide(tideId: tideId, userId: userId, username: username)
     }
     
     /// Attaches a Tide listener.
     /// - Parameter tideId: ID of Tide to fetch and listen to.
     func attachTideListener(tideId: String) { // TODO: Consider returning status if Tide fails to load.
-        let newTideListener = tideRepository.attachTideListener(tideId: tideId) { [weak self] tide in
+        let newTideListener = singleTideRepository.attachTideListener(tideId: tideId) { [weak self] tide in
             if let tide {
                 self?.tide = tide
                 
