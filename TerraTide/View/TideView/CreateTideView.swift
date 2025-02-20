@@ -10,6 +10,7 @@ import SwiftUI
 struct CreateTideView: View {
     @EnvironmentObject private var tideViewModel: SingleTideViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
+    @EnvironmentObject private var locationService: LocationService
     
     @Binding var path: [Route]
     
@@ -26,7 +27,7 @@ struct CreateTideView: View {
     @FocusState private var participantsIsFocused: Bool
     
     private var tideIsValid: Bool {
-        !title.isEmpty && maxParticipants > 1 && maxParticipants <= 10000 && !description.isEmpty
+        !title.isEmpty && maxParticipants > 1 && maxParticipants <= 10000 && !description.isEmpty && locationService.boundingBox != nil
     }
     
     var body: some View {
@@ -158,7 +159,8 @@ struct CreateTideView: View {
                                     byUsername: self.userViewModel.user?.username ?? "",
                                     tideTitle: self.title,
                                     tideDescription: self.description,
-                                    tideGroupSize: self.maxParticipants
+                                    maxParticipants: self.maxParticipants,
+                                    boundingBox: locationService.boundingBox!
                                 )
                                 
                                 // TODO: Display error message on response.
