@@ -10,7 +10,10 @@ import SwiftUI
 struct AvailableTideListView: View {
     @EnvironmentObject private var tidesViewModel: TidesViewModel
     @EnvironmentObject private var locationService: LocationService
+    @EnvironmentObject private var userViewModel: UserViewModel
     @Binding var path: [Route]
+    
+    @State private var attemptingToJoinTide: Bool = false
     
     var body: some View {
         ZStack {
@@ -42,7 +45,7 @@ struct AvailableTideListView: View {
                     ScrollView {
                         LazyVStack {
                             ForEach(tidesViewModel.tides) { tide in
-                                TideItemView(tide: tide, path: $path)
+                                TideItemView(tide: tide, path: $path, attemptingToJoinTide: $attemptingToJoinTide)
                             }
                         }
                     }
@@ -56,8 +59,8 @@ struct AvailableTideListView: View {
         .frame(maxHeight: .infinity, alignment: .bottom)
         .onAppear {
             Task { @MainActor in
-                if let userLocation = locationService.userLocation {
-                    tidesViewModel.attachTidesListener(for: userLocation)
+                if let userLocation = locationService.userLocation, let userId = userViewModel.user?.id {
+                    tidesViewModel.attachTidesListener(for: userLocation, userId: userId)
                 }
             }
         }
@@ -72,7 +75,9 @@ struct AvailableTideListView: View {
 struct TideItemView: View {
     let tide: Tide
     @Binding var path: [Route]
+    @Binding var attemptingToJoinTide: Bool
     
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
     @State private var actionButtonText: String = "Join"
     @State private var showReportTideSheet: Bool = false
@@ -97,7 +102,36 @@ struct TideItemView: View {
                 
                 HStack {
                     Button {
-                        path.append(.tide(tide.id!))
+                        Task {@MainActor in
+                            attemptingToJoinTide = true
+                            if let user = userViewModel.user, let tideId = tide.id {
+                                let status = await singleTideViewModel.joinTide(tideId: tideId, userId: user.id, username: user.username)
+                                
+                                var hasJoined = false
+                                
+                                switch status {
+                                case .invalidTide:
+                                    actionButtonText = "Could not join Tide :("
+                                case .noDocument:
+                                    actionButtonText = "Could not join Tide :("
+                                case .alreadyJoined:
+                                    actionButtonText = "Already a member...weird"
+                                case .full:
+                                    actionButtonText = "Tide is full :("
+                                case .failed:
+                                    actionButtonText = "Could not join Tide :(, something went wrong."
+                                case .joined:
+                                    hasJoined = true
+                                    path.append(.tide(tide.id!))
+                                }
+                                
+                                if !hasJoined {
+                                    attemptingToJoinTide = false
+                                }
+                            } else {
+                                attemptingToJoinTide = false
+                            }
+                        }
                     } label: {
                         HStack {
                             Text(actionButtonText)
@@ -105,12 +139,13 @@ struct TideItemView: View {
                         }
                         .frame(maxWidth: .infinity, maxHeight: .infinity)
                         .padding(10)
-                        .background(.orange)
+                        .background(attemptingToJoinTide ? .gray : .orange)
                         .foregroundStyle(.white)
                         .clipShape(RoundedRectangle(cornerRadius: 5))
                         
                     }
                     .buttonStyle(RemoveHighlightButtonStyle())
+                    .disabled(attemptingToJoinTide)
                 }
                 
             }
@@ -125,6 +160,9 @@ struct TideItemView: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .background(.white)
+        .onAppear {
+            attemptingToJoinTide = false
+        }
         .contextMenu {
             if userViewModel.user?.id != tide.creatorId {
                 Button {
