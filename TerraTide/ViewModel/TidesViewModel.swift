@@ -29,4 +29,11 @@ class TidesViewModel: ObservableObject {
         self.tidesListener = newTidesListener
         self.tidesHaveLoaded = true
     }
+    
+    /// Removes available tides listener and resets loading flag.
+    func removeTidesListener() {
+        self.tidesListener?.remove()
+        self.tidesListener = nil
+        self.tidesHaveLoaded = false
+    }
 }
