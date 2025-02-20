@@ -16,6 +16,7 @@ struct ContentView: View {
     private var locationEnabled: Bool {
         locationService.locationAuthorized == .authorizedAlways || locationService.locationAuthorized == .authorizedWhenInUse
     }
+    
     var body: some View {
         VStack {
             if authViewModel.initialLoadComplete && userViewModel.initialLoadComplete  {
