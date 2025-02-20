@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct TidePageView: View {
-    @EnvironmentObject private var tideViewModel: SingleTideViewModel
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @Binding var path: [Route]
     @State private var displayChat: Bool = true
     
@@ -16,7 +16,7 @@ struct TidePageView: View {
     
     var body: some View {
         ZStack {
-            if !tideViewModel.tideHasLoaded && !tideViewModel.tideChatHasLoaded {
+            if !singleTideViewModel.tideHasLoaded && !singleTideViewModel.tideChatHasLoaded {
                 LoadingView()
             } else {
                 VStack {
@@ -30,7 +30,7 @@ struct TidePageView: View {
                         .frame(width: 50, height: 30, alignment: .leading)
                         
                         Spacer()
-                        Text(tideViewModel.tide?.title ?? "")
+                        Text(singleTideViewModel.tide?.title ?? "")
                         Spacer()
                         
                         Group {
@@ -62,13 +62,18 @@ struct TidePageView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .onAppear {
             Task { @MainActor in
-                if !tideViewModel.tideHasLoaded {
-                    tideViewModel.attachTideListener(tideId: tideId)
+                if !singleTideViewModel.tideHasLoaded {
+                    singleTideViewModel.attachTideListener(tideId: tideId)
                 }
                 // TODO: Declare Tide-specific chat listener.
 //                if !tideViewMode.tideChatHasLoaded {
 //                    tideViewModel.attachTideChatListener(tideId: tideId)
 //                }
+            }
+        }
+        .onDisappear {
+            Task { @MainActor in
+                singleTideViewModel.removeTideListener()
             }
         }
     }
