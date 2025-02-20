@@ -16,4 +16,5 @@ struct Tide: Identifiable, Hashable, Equatable, Codable {
     let participantCount: Int
     let maxParticipants: Int
     let memberIds: [String: String]
+    let expiryDate: Date
 }
