@@ -9,6 +9,7 @@ import SwiftUI
 import FirebaseAuth
 
 struct AuthView: View {
+    @EnvironmentObject private var userViewModel: UserViewModel
     @State private var authType: AuthType = .login
     @State private var isEmailAuth: Bool = true
     @State private var errorMessage = ""
@@ -175,9 +176,7 @@ struct PhoneEmailAuthView: View {
                             Task { @MainActor in
                                 // In case user was created with FirebaseAuth but not in Firestore
                                 let status = await userViewModel.createUser()
-                                if status {
-                                    userViewModel.attachUserListener()
-                                } else {
+                                if !status {
                                     errorMessage = "An error occurred while creating your user account. Try logging in!"
                                     withAnimation {
                                         displayErrorMessage = true
@@ -229,9 +228,7 @@ struct PhoneEmailAuthView: View {
                         case .success:
                             Task { @MainActor in
                                 let status = await userViewModel.createUser()
-                                if status {
-                                    userViewModel.attachUserListener()
-                                } else {
+                                if !status {
                                     errorMessage = "An error occurred while creating your user account. Try logging in!"
                                     withAnimation {
                                         displayErrorMessage = true
