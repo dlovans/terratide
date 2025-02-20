@@ -18,13 +18,15 @@ class SingleTideRepository {
     ///   - tideTitle: Title of Tide.
     ///   - tideDescription: Tide description.
     ///   - tideGroupSize: Max number of participants of Tide.
+    ///   - boundingBox: A square calculated from the center which is the user's location.
     /// - Returns: Tide creation status. Refer to `TideCreationStatus` in `Utils` directory.
     func createTide(
         byUserID: String,
         byUsername: String,
         tideTitle: String,
         tideDescription: String,
-        maxParticipants: Int
+        maxParticipants: Int,
+        boundingBox: BoundingBox
     ) async -> TideCreationStatus {
         if byUserID.isEmpty || byUsername.isEmpty {
             return .missingCredentials
@@ -42,8 +44,13 @@ class SingleTideRepository {
                 "description": tideDescription,
                 "participantCount": 1,
                 "maxParticipants": maxParticipants,
-                "createdAt": Timestamp(date: Date()),
-                "memberIds": [byUserID: byUsername]
+                "expiryDate": Timestamp(date: Date().addingTimeInterval(2 * 60 * 60)),
+                "memberIds": [byUserID: byUsername],
+                "longStart": boundingBox.longStart,
+                "longEnd": boundingBox.longEnd,
+                "latStart": boundingBox.latStart,
+                "latEnd": boundingBox.latEnd,
+                "active": true
             ])
             
             if result.documentID.isEmpty {
