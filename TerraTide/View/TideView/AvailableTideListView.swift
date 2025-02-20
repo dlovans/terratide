@@ -8,18 +8,15 @@
 import SwiftUI
 
 struct AvailableTideListView: View {
+    @EnvironmentObject private var tidesViewModel: TidesViewModel
+    @EnvironmentObject private var locationService: LocationService
     @Binding var path: [Route]
-    
-    let tides: [Tide] = [
-        Tide(id: "0", title: "Dlovan's Psycho Game", description: "Jag ska irritera dig. Första person som blir arg är en n00b.", creatorId: "Dlovan", creatorUsername: "wqer", participantCount: 123, maxParticipants: 10000, memberIds: ["Dlovan":"dlo", "Ibn":"asr"]),
-        Tide(id: "1", title: "Chess Masters", description: "Tävling för schackspelare", creatorId: "Magnus", creatorUsername: "asd", participantCount: 123, maxParticipants: 100, memberIds: ["Dlovan":"dlo", "Ibn":"asr"]),
-        Tide(id: "2", title: "Swift Developers", description: "Diskutera Swift och iOS", creatorId: "AppleDev", creatorUsername: "qweq", participantCount: 123, maxParticipants: 500, memberIds: ["Dlovan":"dlo", "Ibn":"asr"])
-    ]
     
     var body: some View {
         ZStack {
-            VStack {
-                HStack {
+            if tidesViewModel.tidesHaveLoaded {
+                VStack {
+                    HStack {
                         Button {
                             print("Don't touch.")
                         } label: {
@@ -39,28 +36,44 @@ struct AvailableTideListView: View {
                                 .foregroundStyle(.orange)
                                 .font(.system(size: 28))
                         }
-                }
-                .padding(.horizontal, 5)
-
-                ScrollView {
-                    LazyVStack {
-                        ForEach(tides, id: \.self) { tide in
-                            TideItemView(tide: tide, path: $path)
+                    }
+                    .padding(.horizontal, 5)
+                    
+                    ScrollView {
+                        LazyVStack {
+                            ForEach(tidesViewModel.tides) { tide in
+                                TideItemView(tide: tide, path: $path)
+                            }
                         }
                     }
+                    .scrollIndicators(.hidden)
                 }
-                .scrollIndicators(.hidden)
+            } else {
+                LoadingView()
             }
         }
         .padding()
         .frame(maxHeight: .infinity, alignment: .bottom)
+        .onAppear {
+            Task { @MainActor in
+                if let userLocation = locationService.userLocation {
+                    tidesViewModel.attachTidesListener(for: userLocation)
+                }
+            }
+        }
+        .onDisappear {
+            Task { @MainActor in
+                tidesViewModel.removeTidesListener()
+            }
+        }
     }
 }
 
 struct TideItemView: View {
     let tide: Tide
-
     @Binding var path: [Route]
+    
+    @EnvironmentObject private var userViewModel: UserViewModel
     @State private var actionButtonText: String = "Join"
     @State private var showReportTideSheet: Bool = false
     
@@ -76,20 +89,15 @@ struct TideItemView: View {
                 Divider()
                     .background(.gray)
                 HStack {
-                    Text("By: \(tide.creatorId)")
+                    Text("By: \(tide.creatorUsername)")
                     Spacer()
                     Image(systemName: "person.fill")
-                    Text("\(tide.memberIds.count)/\(tide.maxParticipants)")
-                }
-                HStack {
-                    Text("Expires in:")
-                    Spacer()
-                    Text(Date.now.addingTimeInterval(500), style: .timer)
+                    Text("\(tide.participantCount)/\(tide.maxParticipants)")
                 }
                 
                 HStack {
                     Button {
-                        path.append(.tide(String(tide.id ?? "")))
+                        path.append(.tide(tide.id!))
                     } label: {
                         HStack {
                             Text(actionButtonText)
@@ -118,11 +126,12 @@ struct TideItemView: View {
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .background(.white)
         .contextMenu {
-            // If userId != creatorId, display these...
-            Button {
-                showReportTideSheet = true
-            } label: {
-                Text("Report")
+            if userViewModel.user?.id != tide.creatorId {
+                Button {
+                    showReportTideSheet = true
+                } label: {
+                    Text("Report")
+                }
             }
         }
         .sheet(isPresented: $showReportTideSheet) {
