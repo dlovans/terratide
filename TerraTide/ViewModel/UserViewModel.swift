@@ -17,22 +17,34 @@ class UserViewModel: ObservableObject {
     private var userListener: ListenerRegistration? = nil
     
     private var userRepository = UserRepository()
+    var handle: AuthStateDidChangeListenerHandle?
     
     init() {
         Task { @MainActor in
-            if let _ = Auth.auth().currentUser?.uid {
+            handle = Auth.auth().addStateDidChangeListener { [weak self] _, user in
+                guard let self else { return }
+                
                 self.userListener?.remove()
-                self.userListener = userRepository.attachUserListener() { [weak self] user in
-                    if let user {
-                        self?.user = user
+                self.userListener = nil
+
+                if let _ = user {
+                    self.userListener = userRepository.attachUserListener { [weak self] user in
+                        guard let self else { return }
+                        if let user {
+                            self.user = user
+                            self.userDataLoaded = true
+                        }
                     }
+                } else {
+                    self.user = nil
+                    self.userDataLoaded = false
                 }
-                self.userDataLoaded = true
             }
             
             self.initialLoadComplete = true
         }
     }
+
     
     
     /// Creates a user document in users collection.
@@ -69,5 +81,12 @@ class UserViewModel: ObservableObject {
     /// - Returns: A value representing the status of this operation.
     func updateNewUserData(username: String, dateOfBirth: Date) async -> UpdateNewUserStatus {
         return await userRepository.updateNewUserData(username: username, dateOfBirth: dateOfBirth)
+    }
+    
+    func clearUserData() {
+        self.userListener?.remove()
+        self.userListener = nil
+        self.user = nil
+        self.userDataLoaded = false
     }
 }
