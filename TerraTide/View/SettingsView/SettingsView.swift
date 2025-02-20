@@ -9,6 +9,8 @@ import SwiftUI
 
 struct SettingsView: View {
     @EnvironmentObject var authViewModel: AuthViewModel
+    @EnvironmentObject var userViewModel: UserViewModel
+    @EnvironmentObject var tidesViewModel: TidesViewModel
     @State private var  displayErrorMessage: Bool = false
     @State private var errorMessage: String = ""
     @State private var errorWorkItem: DispatchWorkItem?
