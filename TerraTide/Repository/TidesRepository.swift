@@ -16,7 +16,7 @@ class TidesRepository {
     ///   - userLocation: Location of the user.
     ///   - onUpdate: A closure that is executed when the fetching and attaching the listener is completed.
     /// - Returns: A listener, listening on the `tides` collection documents.
-    func attachTidesListener(for userLocation: Coordinate, onUpdate: @escaping ([Tide]?) -> Void) -> ListenerRegistration? {
+    func attachTidesListener(for userLocation: Coordinate, userId: String, onUpdate: @escaping ([Tide]?) -> Void) -> ListenerRegistration? {
         let listener = db.collection("tides")
             .whereField("active", isEqualTo: true)
             .whereField("longStart", isLessThanOrEqualTo: userLocation.longitude)
@@ -37,7 +37,13 @@ class TidesRepository {
                     return
                 }
                 
-                let tides: [Tide] = querySnapshot.documents.compactMap { tide in
+                let filteredTides = querySnapshot.documents.filter { document in
+                    let members = document.data()["memberIds"] as? [String: String] ?? [:]
+                    let participantCount = document.data()["participantCount"] as? Int ?? 0
+                    let maxParticipants = document.data()["maxParticipants"] as? Int ?? 0
+                    return !members.keys.contains(userId) && participantCount < maxParticipants
+                }
+                let tides: [Tide] = filteredTides.compactMap { tide in
                     do {
                         return try tide.data(as: Tide.self)
                     } catch {
