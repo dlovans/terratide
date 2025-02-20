@@ -11,9 +11,9 @@ struct ActiveTideListView: View {
     @Binding var path: [Route]
     
     let tides: [Tide] = [
-        Tide(id: "0", title: "Dlovan's Psycho Game", description: "Jag ska irritera dig. Första person som blir arg är en n00b.", creatorId: "Dlovan", creatorUsername: "dsf", participantCount: 123, maxParticipants: 10000, memberIds: ["Dlovan":"dlo", "Ibn":"asr"]),
-        Tide(id: "1", title: "Chess Masters", description: "Tävling för schackspelare", creatorId: "Magnus", creatorUsername: "asds", participantCount: 123, maxParticipants: 100, memberIds: ["Dlovan":"dlo", "Ibn":"asr"]),
-        Tide(id: "2", title: "Swift Developers", description: "Diskutera Swift och iOS", creatorId: "AppleDev", creatorUsername: "asdsad", participantCount: 123, maxParticipants: 500, memberIds: ["Dlovan":"dlo", "Ibn":"asr"])
+        Tide(id: "0", title: "Dlovan's Psycho Game", description: "Jag ska irritera dig. Första person som blir arg är en n00b.", creatorId: "Dlovan", creatorUsername: "dsf", participantCount: 123, maxParticipants: 10000, memberIds: ["Dlovan":"dlo", "Ibn":"asr"], expiryDate: Date()),
+        Tide(id: "1", title: "Chess Masters", description: "Tävling för schackspelare", creatorId: "Magnus", creatorUsername: "asds", participantCount: 123, maxParticipants: 100, memberIds: ["Dlovan":"dlo", "Ibn":"asr"], expiryDate: Date()),
+        Tide(id: "2", title: "Swift Developers", description: "Diskutera Swift och iOS", creatorId: "AppleDev", creatorUsername: "asdsad", participantCount: 123, maxParticipants: 500, memberIds: ["Dlovan":"dlo", "Ibn":"asr"], expiryDate: Date())
     ]
     
     var body: some View {
