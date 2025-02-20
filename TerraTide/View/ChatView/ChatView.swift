@@ -8,11 +8,9 @@
 import SwiftUI
 
 struct ChatView: View {
-    let chatId: String = "123"
-    
     @EnvironmentObject private var locationService: LocationService
     @EnvironmentObject private var chatViewModel: ChatViewModel
-    @FocusState private var chatFieldIsFocused: Bool
+    var chatFieldIsFocused: FocusState<Bool>.Binding
     
     var body: some View {
         ZStack {
@@ -20,20 +18,21 @@ struct ChatView: View {
                 Text("Geo Chat")
                     .frame(maxWidth: .infinity)
                     .padding(.top, 10)
+                
                 ScrollViewReader { reader in
                     ScrollView {
                         LazyVStack {
                             ForEach(chatViewModel.geoMessages) { message in
                                 ChatMessageView(
                                     createdBy: message.sender,
+                                    userId: message.byUserId,
                                     messageContent: message.text,
                                     timeStamp: message.timestamp
                                 )
                                 .id(message.id)
                             }
                         }
-                        .onChange(of: chatFieldIsFocused) { _, newValue in
-                            print(chatFieldIsFocused)
+                        .onChange(of: chatFieldIsFocused.wrappedValue) { _, newValue in
                             if newValue {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                                     withAnimation {
@@ -51,7 +50,7 @@ struct ChatView: View {
                     .scrollDismissesKeyboard(.immediately)
                 }
                 
-                ChatFieldView(chatFieldIsFocused: $chatFieldIsFocused)
+                ChatFieldView(chatFieldIsFocused: chatFieldIsFocused)
             }
         }
         .padding()
@@ -70,25 +69,26 @@ struct ChatView: View {
             }
         }
         .onDisappear {
-            Task {
+            Task { @MainActor in
                 chatViewModel.removeChatListener()
+                print("Geo chat listener destroyed")
+                
             }
-            print("Geo chat listener destroyed")
         }
     }
 }
 
 struct ChatMessageView: View {
+    @EnvironmentObject private var userViewModel: UserViewModel
     let createdBy: String
+    let userId: String
     let messageContent: String
     let timeStamp: Date
-    
-    let mockSelfUser = "You"
     
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                if mockSelfUser != createdBy {
+                if userViewModel.user?.id != userId {
                     Spacer()
                     Text(timeStamp, style: .time)
                         .font(.footnote)
@@ -101,7 +101,7 @@ struct ChatMessageView: View {
                         alignment: .topLeading
                     )
                     .padding()
-                    .background(mockSelfUser == createdBy ? .green.opacity(0.3) : .orange.opacity(0.3))
+                    .background(userViewModel.user?.id == userId ? .green.opacity(0.3) : .orange.opacity(0.3))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .contextMenu {
                         Button {
@@ -111,7 +111,7 @@ struct ChatMessageView: View {
                         }
                     }
                 
-                if mockSelfUser == createdBy {
+                if userViewModel.user?.id == userId {
                     Text(timeStamp, style: .time)
                         .font(.footnote)
                     Spacer()
@@ -179,8 +179,4 @@ struct ChatFieldView: View {
                 .stroke(.black, lineWidth: 2)
         }
     }
-}
-
-#Preview {
-    ChatView()
 }
