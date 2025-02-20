@@ -65,6 +65,51 @@ class SingleTideRepository {
         }
     }
     
+    /// Joins a Tide.
+    /// - Parameters:
+    ///   - tideId: ID of the Tide to join.
+    ///   - userId: ID of the user attempting to join Tide.
+    ///   - username: Username of the user attempting to join Tide.
+    /// - Returns: Status of join attempt.
+    func joinTide(tideId: String, userId: String, username: String) async -> JoinTideStatus {
+        if tideId.isEmpty {
+            print("Tide ID argument is empty when attempting to join Tide.")
+            return .invalidTide
+        }
+        
+        do {
+            let snapshot = try await db.collection("tides").document(tideId).getDocument()
+            
+            guard let data = snapshot.data(), snapshot.exists else {
+                print("Failed to join Tide. No data found in snapshot.")
+                return .noDocument
+            }
+            let members = data["memberIds"] as? [String: String] ?? [:]
+            
+            if members.keys.contains(userId) {
+                print("User is already a member of Tide.")
+                return .alreadyJoined
+            }
+            
+            let participantCount = data["participantCount"] as? Int ?? 0
+            let maxParticipants = data["maxParticipants"] as? Int ?? 0
+            if participantCount >= maxParticipants || maxParticipants < 1 {
+                print("Tide is full! Could not join.")
+                return .full
+            } else {
+                try await db.collection("tides").document(tideId).updateData([
+                    "participantCount": FieldValue.increment(Int64(1)),
+                    "memberIds.\(userId)": username
+                ])
+            }
+            return .joined
+            
+        } catch {
+            print("Failed to join Tide. Error: \(error)")
+            return .failed
+        }
+    }
+    
     /// Fetches a Tide and attaches a document listener.
     /// - Parameters:
     ///   - tideId: ID of Tide to fetch.
