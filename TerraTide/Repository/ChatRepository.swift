@@ -12,12 +12,11 @@ class ChatRepository {
     let db = Firestore.firestore()
     
     /// Fetches geo-based chat messages.
-    /// - Note: Do not confuse with Tide-specific chat messages! Tide-specific chat messages are found in TideRepository.
     /// - Parameters:
     ///   - boundingBox: Tuple representing a bounding box, calculated from a user's position.
     ///   - onUpdate: A closure that runs when fetching messages is completed.
     /// - Returns: Chat messages listener. Use to reset in ChatViewModel to avoid memory leaks.
-    func attachChatListener(for userLocation: Coordinate, onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
+    func attachGeoChatListener(for userLocation: Coordinate, onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
         let geoChatListener = db.collection("messages")
             .whereField("longStart", isLessThanOrEqualTo: userLocation.longitude)
             .whereField("longEnd", isGreaterThanOrEqualTo: userLocation.longitude)
@@ -58,14 +57,14 @@ class ChatRepository {
         return geoChatListener
     }
     
-    /// Create a message document in the database.
+    /// Create a geo message document in the database.
     /// - Parameters:
     ///   - text: Message content.
     ///   - sender: Username of sender.
     ///   - userId: User ID of sender.
     ///   - boundingBox: Geospatial bounding box for this message.
     /// - Returns: Status of message operation.
-    func createMessage(with text: String, by sender: String, with userId: String, boundingBox: BoundingBox?) async -> MessageStatus {
+    func createGeoMessage(with text: String, by sender: String, with userId: String, boundingBox: BoundingBox?) async -> MessageStatus {
         if text.isEmpty {
             return .emptyMessage
         }
@@ -85,7 +84,80 @@ class ChatRepository {
             ])
             return .sent
         } catch {
-            print("An error occurred while creating a message: \(error)")
+            print("An error occurred while creating a geo message: \(error)")
+            return .failedToCreate
+        }
+    }
+    
+    /// Fetches tide-based chat messages.
+    /// - Parameters:
+    ///   - tideId: ID of Tide with `messages` subcollection.
+    ///   - onUpdate: A closure that runs when fetching messages is completed.
+    /// - Returns: Chat messages listener. Use to reset in ChatViewModel to avoid memory leaks.
+    func attachTideChatListener(for tideId: String, onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
+        let tideChatListener = db.collection("tides").document(tideId).collection("messages")
+            .order(by: "timestamp")
+            .limit(to: 100)
+            .addSnapshotListener { querySnapshot, error in
+                if let error {
+                    print("An error occurred while listening for tide chat: \(error)")
+                    onUpdate(nil)
+                }
+                
+                guard let snapshot = querySnapshot else {
+                    print("Error fetching messages for tide chat: \(error!)")
+                    onUpdate(nil)
+                    return
+                }
+                
+                if snapshot.isEmpty {
+                    onUpdate([])
+                    return
+                }
+                
+                let tideMessages: [Message] = snapshot.documents.compactMap { message in
+                    do {
+                        return try message.data(as: Message.self)
+                    } catch {
+                        print("Error decoding message data: \(error)")
+                        return nil
+                    }
+                }
+                onUpdate(tideMessages)
+            }
+        
+        return tideChatListener
+    }
+    
+    /// Create a Tide message document in the database.
+    /// - Parameters:
+    ///   - tideId: ID of Tide with `messages` subcollection.
+    ///   - text: Message content.
+    ///   - sender: Username of sender.
+    ///   - userId: User ID of sender.
+    /// - Returns: Status of message operation.
+    func createTideMessage(tideId: String, with text: String, by sender: String, with userId: String) async -> MessageStatus {
+        if text.isEmpty {
+            print("Message is empty.")
+            return .emptyMessage
+        }
+        
+        if tideId.isEmpty || sender.isEmpty || userId.isEmpty {
+            print("Invalid data provided.")
+            return .invalidData
+        }
+                
+        do {
+            try await db.collection("tides").document(tideId).collection("messages").addDocument(data: [
+                "text": text,
+                "sender": sender,
+                "byUserId": userId,
+                "timestamp": Date()
+            ])
+            
+            return .sent
+        } catch {
+            print("An error occurred while creating a Tide message: \(error)")
             return .failedToCreate
         }
     }
