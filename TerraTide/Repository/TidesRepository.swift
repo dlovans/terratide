@@ -38,12 +38,48 @@ class TidesRepository {
                 }
                 
                 let filteredTides = querySnapshot.documents.filter { document in
-                    let members = document.data()["memberIds"] as? [String: String] ?? [:]
+                    let memberIds = document.data()["memberIds"] as? [String] ?? []
                     let participantCount = document.data()["participantCount"] as? Int ?? 0
                     let maxParticipants = document.data()["maxParticipants"] as? Int ?? 0
-                    return !members.keys.contains(userId) && participantCount < maxParticipants
+                    return !memberIds.contains(userId) && participantCount < maxParticipants
                 }
                 let tides: [Tide] = filteredTides.compactMap { tide in
+                    do {
+                        return try tide.data(as: Tide.self)
+                    } catch {
+                        print("Error decoding Tide data, \(error)")
+                        return nil
+                    }
+                }
+                onUpdate(tides)
+            }
+        
+        return listener
+    }
+    
+    /// Fetches joined Tides and attaches listener.
+    /// - Parameters:
+    ///   - userId: User ID to fetch user's joined Tides.
+    ///   - onUpdate: A closure that is executed when the fetching and attaching the listener is completed.
+    /// - Returns: A listener, listening on the `tides` collection documents.
+    func attachActiveTidesListener(userId: String, onUpdate: @escaping ([Tide]?) -> Void) -> ListenerRegistration? {
+        let listener = db.collection("tides")
+            .whereField("primedForDeletion", isEqualTo: false)
+            .whereField("memberIds", arrayContains: userId)
+            .addSnapshotListener { querySnapshot, error in
+                if let error {
+                    print("Failed to fetch Tide documents: \(error.localizedDescription)")
+                    onUpdate(nil)
+                    return
+                }
+                
+                guard let querySnapshot, !querySnapshot.isEmpty else {
+                    print("No documents fetched.")
+                    onUpdate(nil)
+                    return
+                }
+                
+                let tides: [Tide] = querySnapshot.documents.compactMap { tide in
                     do {
                         return try tide.data(as: Tide.self)
                     } catch {
