@@ -8,5 +8,5 @@
 import Foundation
 
 enum MessageStatus {
-    case sent, failedToCreate, emptyMessage, invalidLocation
+    case sent, failedToCreate, emptyMessage, invalidLocation, invalidData
 }
