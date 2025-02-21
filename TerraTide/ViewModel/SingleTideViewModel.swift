@@ -46,6 +46,15 @@ class SingleTideViewModel: ObservableObject {
         return await singleTideRepository.joinTide(tideId: tideId, userId: userId, username: username)
     }
     
+    /// Leaves a Tide.
+    /// - Parameters:
+    ///   - tideId: ID of the Tide to leave.
+    ///   - userId: ID of the user attempting to leave Tide.
+    /// - Returns: Status of leave attempt.
+    func leaveTide(tideId: String, userId: String) async -> LeaveTideStatus {
+        return await singleTideRepository.leaveTide(tideId: tideId, userId: userId)
+    }
+    
     /// Attaches a Tide listener.
     /// - Parameter tideId: ID of Tide to fetch and listen to.
     func attachTideListener(tideId: String) { // TODO: Consider returning status if Tide fails to load.
