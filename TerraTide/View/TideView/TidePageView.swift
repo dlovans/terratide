@@ -80,7 +80,7 @@ struct TidePageView: View {
 }
 
 struct TideDetailsView: View {
-    @EnvironmentObject private var tideViewModel: SingleTideViewModel
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
     
     var body: some View {
@@ -96,10 +96,10 @@ struct TideDetailsView: View {
                 HStack {
                     Text("Tide Size:")
                     Spacer()
-                    Text("\(tideViewModel.tide?.memberIds.count ?? 1)/\(tideViewModel.tide?.maxParticipants ?? 10)")
+                    Text("\(singleTideViewModel.tide?.participantCount ?? 1)/\(singleTideViewModel.tide?.maxParticipants ?? 10)")
                 }
                 
-                Text(tideViewModel.tide?.description ?? "")
+                Text(singleTideViewModel.tide?.description ?? "")
                     .frame(maxWidth: .infinity, alignment: .leading)
                 
                 Divider()
@@ -110,9 +110,9 @@ struct TideDetailsView: View {
                     ScrollView {
                         LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 100)), count: 3), spacing: 10) {
                 
-                            TideMemberView(userId: tideViewModel.tide?.creatorId ?? "", username: tideViewModel.tide?.creatorUsername ?? "")
-                            if let memberIds = tideViewModel.tide?.memberIds {
-                                ForEach(memberIds.keys.sorted().filter { $0 != tideViewModel.tide?.creatorId ?? ""}, id: \.self) { memberId in
+                            TideMemberView(userId: singleTideViewModel.tide?.creatorId ?? "", username: singleTideViewModel.tide?.creatorUsername ?? "")
+                            if let memberIds = singleTideViewModel.tide?.members {
+                                ForEach(memberIds.keys.sorted().filter { $0 != singleTideViewModel.tide?.creatorId ?? ""}, id: \.self) { memberId in
                                     if let memberUsername = memberIds[memberId] {
                                         TideMemberView(userId: memberId, username: memberUsername)
                                     }
