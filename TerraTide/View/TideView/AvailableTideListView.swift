@@ -1,5 +1,5 @@
 //
-//  TideView.swift
+//  AvailableTideListView.swift
 //  TerraTide
 //
 //  Created by Dlovan Sharif on 2025-01-25.
@@ -17,7 +17,7 @@ struct AvailableTideListView: View {
     
     var body: some View {
         ZStack {
-            if tidesViewModel.tidesHaveLoaded {
+            if tidesViewModel.availableTidesHaveLoaded {
                 VStack {
                     HStack {
                         Button {
@@ -44,7 +44,7 @@ struct AvailableTideListView: View {
                     
                     ScrollView {
                         LazyVStack {
-                            ForEach(tidesViewModel.tides) { tide in
+                            ForEach(tidesViewModel.availableTides) { tide in
                                 TideItemView(tide: tide, path: $path, attemptingToJoinTide: $attemptingToJoinTide)
                             }
                         }
@@ -111,9 +111,9 @@ struct TideItemView: View {
                                 
                                 switch status {
                                 case .invalidTide:
-                                    actionButtonText = "Could not join Tide :("
+                                    actionButtonText = "Could not find Tide :("
                                 case .noDocument:
-                                    actionButtonText = "Could not join Tide :("
+                                    actionButtonText = "Could not find Tide :("
                                 case .alreadyJoined:
                                     actionButtonText = "Already a member...weird"
                                 case .full:
@@ -173,7 +173,7 @@ struct TideItemView: View {
             }
         }
         .sheet(isPresented: $showReportTideSheet) {
-            Text("Hello worlnknkd")
+            Text(tide.id!)
         }
     }
 }
