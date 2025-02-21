@@ -63,7 +63,6 @@ class UserViewModel: ObservableObject {
         if !userDataLoaded {
             userDataLoaded = true
         }
-        self.userListener?.remove()
         self.userListener = newUserListener
     }
     
@@ -81,12 +80,5 @@ class UserViewModel: ObservableObject {
     /// - Returns: A value representing the status of this operation.
     func updateNewUserData(username: String, dateOfBirth: Date) async -> UpdateNewUserStatus {
         return await userRepository.updateNewUserData(username: username, dateOfBirth: dateOfBirth)
-    }
-    
-    func clearUserData() {
-        self.userListener?.remove()
-        self.userListener = nil
-        self.user = nil
-        self.userDataLoaded = false
     }
 }
