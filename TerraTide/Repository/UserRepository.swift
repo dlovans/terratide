@@ -61,7 +61,7 @@ class UserRepository {
                 let userObject = User(
                             id: document.documentID,
                             username: data["username"] as? String ?? "",
-                            blockedUserIds: data["blockedUserIds"] as? [String] ?? [],
+                            blockedUsers: data["blockedUsers"] as? [String: String] ?? [:],
                             dateOfBirth: data["dateOfBirth"] as? Date ?? Date(),
                             isBanned: data["isBanned"] as? Bool ?? false,
                             banReason: data["banReason"] as? String ?? "",
