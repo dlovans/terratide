@@ -45,12 +45,15 @@ class SingleTideRepository {
                 "participantCount": 1,
                 "maxParticipants": maxParticipants,
                 "expiryDate": Timestamp(date: Date().addingTimeInterval(2 * 60 * 60)),
-                "memberIds": [byUserID: byUsername],
+                "primeForDeletionDate": Timestamp(date: Date().addingTimeInterval(24 * 60 * 60)),
+                "members": [byUserID: byUsername],
                 "longStart": boundingBox.longStart,
                 "longEnd": boundingBox.longEnd,
                 "latStart": boundingBox.latStart,
                 "latEnd": boundingBox.latEnd,
-                "active": true
+                "active": true, // TODO: Write cloud function making this Tide invisible after expiryDate
+                "primedForDeletion": false, // TODO: Write cloud function priming this Tide for deletion after deletionDate
+                "memberIds": [byUserID]
             ])
             
             if result.documentID.isEmpty {
@@ -84,7 +87,7 @@ class SingleTideRepository {
                 print("Failed to join Tide. No data found in snapshot.")
                 return .noDocument
             }
-            let members = data["memberIds"] as? [String: String] ?? [:]
+            let members = data["members"] as? [String: String] ?? [:]
             
             if members.keys.contains(userId) {
                 print("User is already a member of Tide.")
@@ -99,7 +102,8 @@ class SingleTideRepository {
             } else {
                 try await db.collection("tides").document(tideId).updateData([
                     "participantCount": FieldValue.increment(Int64(1)),
-                    "memberIds.\(userId)": username
+                    "members.\(userId)": username,
+                    "memberIds": FieldValue.arrayUnion([userId])
                 ])
             }
             return .joined
