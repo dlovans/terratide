@@ -57,20 +57,20 @@ struct ChatView: View {
         .onAppear {
             if let userLocation = locationService.userLocation {
                 Task { @MainActor in
-                    chatViewModel.attachChatListener(userLocation: userLocation)
+                    chatViewModel.attachGeoChatListener(userLocation: userLocation)
                 }
             }
         }
         .onChange(of: locationService.userLocation) { _, newValue in
             if let userLocation = locationService.userLocation {
                 Task {
-                    chatViewModel.attachChatListener(userLocation: userLocation)
+                    chatViewModel.attachGeoChatListener(userLocation: userLocation)
                 }
             }
         }
         .onDisappear {
             Task { @MainActor in
-                chatViewModel.removeChatListener()
+                chatViewModel.removeGeoChatListener()
                 print("Geo chat listener destroyed")
                 
             }
@@ -145,7 +145,7 @@ struct ChatFieldView: View {
                 if !messageContent.isEmpty {
                     if let user = userViewModel.user, let boundingBox = locationService.boundingBox {
                         Task { @MainActor in
-                            let status = await chatViewModel.createMessage(
+                            let status = await chatViewModel.createGeoMessage(
                                 text: self.messageContent,
                                 sender: user.username,
                                 userId: user.id,
@@ -162,6 +162,8 @@ struct ChatFieldView: View {
                             case .sent:
                                 print("Message was sent!")
                                 messageContent = ""
+                            default:
+                                print("Unknown error occurred! Sorry :(")
                             }
                         }
                     }
