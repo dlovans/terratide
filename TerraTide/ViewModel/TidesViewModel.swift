@@ -9,31 +9,60 @@ import Foundation
 import FirebaseFirestore
 
 class TidesViewModel: ObservableObject {
-    @Published var tidesHaveLoaded: Bool = false
-    @Published var tides: [Tide] = []
+    @Published var availableTidesHaveLoaded: Bool = false
+    @Published var activeTidesHaveLoaded: Bool = false
+    @Published var availableTides: [Tide] = []
+    @Published var activeTides: [Tide] = []
     
     private let tidesRepository = TidesRepository()
-    private var tidesListener: ListenerRegistration? = nil
+    private var availableTidesListener: ListenerRegistration? = nil
+    private var activeTidesListener: ListenerRegistration? = nil
     
-    /// Call method in TidesRepository to fetch tides and attach listener to app.
+    /// Calls method in TidesRepository to fetch available tides and attach listener to app.
     /// - Parameter userLocation: User location with longitude and latitude.
     func attachAvailableTidesListener(for userLocation: Coordinate, userId: String) {
-        let newTidesListener = tidesRepository.attachAvailableTidesListener(for: userLocation, userId: userId) { tides in
+        let newTidesListener = tidesRepository.attachAvailableTidesListener(for: userLocation, userId: userId) { [weak self] tides in
+            guard let self else { return }
             if let tides {
-                self.tides = tides
+                self.availableTides = tides
             } else {
                 print("Failed to fetch available tides!")
-                self.tides = []
+                self.availableTides = []
             }
         }
-        self.tidesListener = newTidesListener
-        self.tidesHaveLoaded = true
+        
+        self.availableTidesListener = newTidesListener
+        self.availableTidesHaveLoaded = true
     }
     
     /// Removes available tides listener and resets loading flag.
     func removeAvailableTidesListener() {
-        self.tidesListener?.remove()
-        self.tidesListener = nil
-        self.tidesHaveLoaded = false
+        self.availableTidesListener?.remove()
+        self.availableTidesListener = nil
+        self.availableTidesHaveLoaded = false
+    }
+    
+    /// Calls method in TidesRepository to fetch active (joined) tides and attach listener to app.
+    /// - Parameter userId: User ID of the user to fetch joined tides.
+    func attachActiveTidesListener(userId: String) {
+        let newTidesListener = tidesRepository.attachActiveTidesListener(userId: userId) { [weak self] tides in
+            guard let self else { return }
+            if let tides {
+                self.activeTides = tides
+            } else {
+                print("Failed to fetch active tides!")
+                self.activeTides = []
+            }
+        }
+        
+        self.activeTidesListener = newTidesListener
+        self.activeTidesHaveLoaded = true
+    }
+    
+    /// Removes active tides listener and resets loading flag.
+    func removeActiveTidesListener() {
+        self.activeTidesListener?.remove()
+        self.activeTidesListener = nil
+        self.activeTidesHaveLoaded = false
     }
 }
