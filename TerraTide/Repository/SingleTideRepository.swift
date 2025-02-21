@@ -45,7 +45,7 @@ class SingleTideRepository {
                 "participantCount": 1,
                 "maxParticipants": maxParticipants,
                 "expiryDate": Timestamp(date: Date().addingTimeInterval(2 * 60 * 60)),
-                "primeForDeletionDate": Timestamp(date: Date().addingTimeInterval(24 * 60 * 60)),
+                "primeFordeletionDate": Timestamp(date: Date().addingTimeInterval(24 * 60 * 60)),
                 "members": [byUserID: byUsername],
                 "longStart": boundingBox.longStart,
                 "longEnd": boundingBox.longEnd,
