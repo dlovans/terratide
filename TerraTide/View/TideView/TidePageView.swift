@@ -9,6 +9,7 @@ import SwiftUI
 
 struct TidePageView: View {
     @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
+    @EnvironmentObject private var chatViewModel: ChatViewModel
     @Binding var path: [Route]
     @State private var displayChat: Bool = true
     
@@ -49,7 +50,18 @@ struct TidePageView: View {
                     
                     if displayChat {
                         VStack {
-                            TideChatView()
+                            if chatViewModel.tideChatHasLoaded {
+                                TideChatView()
+                            } else {
+                                LoadingView()
+                            }
+                        }
+                        .onAppear {
+                            Task { @MainActor in
+                                if !chatViewModel.tideChatHasLoaded {
+                                    chatViewModel.attachTideChatListener(tideId: singleTideViewModel.tide?.id ?? "")
+                                }
+                            }
                         }
                     } else {
                         TideDetailsView()
@@ -65,14 +77,11 @@ struct TidePageView: View {
                 if !singleTideViewModel.tideHasLoaded {
                     singleTideViewModel.attachTideListener(tideId: tideId)
                 }
-                // TODO: Declare Tide-specific chat listener.
-//                if !tideViewMode.tideChatHasLoaded {
-//                    tideViewModel.attachTideChatListener(tideId: tideId)
-//                }
             }
         }
         .onDisappear {
             Task { @MainActor in
+                chatViewModel.removeTideChatListener()
                 singleTideViewModel.removeTideListener()
             }
         }
@@ -178,20 +187,8 @@ struct ShareTideView: View {
 }
 
 struct TideChatView: View {
-    let chatId: String = "123"
     @FocusState private var chatFieldIsFocused: Bool
-    
-    let mockMessages: [Message] = [
-        Message(id: "1", text: "Hey, how's it going?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-3600)),
-        Message(id: "10", text: "Hey, how's it going?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-3600)),
-        
-        Message(id: "2", text: "Pretty good! Just working on my app.", byUserId: "wdasd", sender: "You", timestamp: Date().addingTimeInterval(-3000)),
-        Message(id: "3", text: "Nice! What are you building?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-2400)),
-        Message(id: "4", text: "A geospatial chat app.", byUserId: "wdasd", sender: "You", timestamp: Date().addingTimeInterval(-1800)),
-        Message(id: "5", text: "That sounds cool! How does it work?", byUserId: "wdasd", sender: "Alice", timestamp: Date().addingTimeInterval(-1200)),
-        Message(id: "6", text: "You can create and join activities based on location.", byUserId: "wdasd", sender: "You", timestamp: Date().addingTimeInterval(-600)),
-        Message(id: "7", text: "Interesting! Does it show people nearby?", byUserId: "wdasd", sender: "Alice", timestamp: Date())
-    ]
+    @EnvironmentObject private var chatViewModel: ChatViewModel
     
     var body: some View {
         ZStack {
@@ -199,9 +196,10 @@ struct TideChatView: View {
                 ScrollViewReader { reader in
                     ScrollView {
                         LazyVStack {
-                            ForEach(mockMessages) { message in
+                            ForEach(chatViewModel.tideMessages) { message in
                                 TideChatMessageView(
-                                    createdBy: message.sender,
+                                    creatorUsername: message.sender,
+                                    creatorId: message.byUserId,
                                     messageContent: message.text,
                                     timeStamp: message.timestamp
                                 )
@@ -213,7 +211,7 @@ struct TideChatView: View {
                             if newValue {
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
                                     withAnimation {
-                                        reader.scrollTo(mockMessages.last!.id)
+                                        reader.scrollTo(chatViewModel.tideMessages.last?.id)
                                     }
                                 }
                             }
@@ -231,23 +229,23 @@ struct TideChatView: View {
 }
 
 struct TideChatMessageView: View {
-    let createdBy: String
+    let creatorUsername: String
+    let creatorId: String
     let messageContent: String
     let timeStamp: Date
-    
-    let mockSelfUser = "You"
-    
+        
     @State private var showReportMessageSheet: Bool = false
+    @EnvironmentObject private var userViewModel: UserViewModel
     
     var body: some View {
         VStack(spacing: 0) {
             HStack {
-                if mockSelfUser != createdBy {
+                if userViewModel.user?.id != creatorId {
                     Spacer()
                     Text(timeStamp, style: .time)
                         .font(.footnote)
                 }
-                Text("\(createdBy): \(messageContent)")
+                Text("\(creatorUsername): \(messageContent)")
                     .font(.subheadline)
                     .frame(
                         minWidth: 0,
@@ -255,7 +253,7 @@ struct TideChatMessageView: View {
                         alignment: .topLeading
                     )
                     .padding()
-                    .background(mockSelfUser == createdBy ? .green.opacity(0.3) : .orange.opacity(0.3))
+                    .background(userViewModel.user?.id != creatorId ? .green.opacity(0.3) : .orange.opacity(0.3))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .contextMenu {
                         Button {
@@ -268,7 +266,7 @@ struct TideChatMessageView: View {
                         Text("Reporting message....")
                     }
                 
-                if mockSelfUser == createdBy {
+                if userViewModel.user?.id == creatorId {
                     Text(timeStamp, style: .time)
                         .font(.footnote)
                     Spacer()
@@ -281,7 +279,11 @@ struct TideChatMessageView: View {
 }
 
 struct TideChatFieldView: View {
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
+    @EnvironmentObject private var chatViewModel: ChatViewModel
+    @EnvironmentObject private var userViewModel: UserViewModel
     @State private var messageContent: String = ""
+    
     var chatFieldIsFocused: FocusState<Bool>.Binding
     
     var body: some View {
@@ -296,8 +298,27 @@ struct TideChatFieldView: View {
                     }
                 }
             Button {
-                // Send message
-                messageContent = ""
+                Task { @MainActor in
+                    let status = await chatViewModel.createTideMessage(
+                        tideId: singleTideViewModel.tide?.id ?? "",
+                        text: messageContent,
+                        sender: userViewModel.user?.username ?? "",
+                        userId: userViewModel.user?.id ?? ""
+                    )
+                    
+                    switch status { // TODO: Provide feedback to user if message isn't created.
+                    case .emptyMessage:
+                        print("Cannot send message without content.")
+                    case .failedToCreate:
+                        print("Failed to send message :(")
+                    case .invalidData:
+                        print("Something went wrong while creating the message.")
+                    case .sent:
+                        messageContent = ""
+                    default:
+                        print("Unknown error occurred.")
+                    }
+                }
             } label: {
                 Image(systemName: "paperplane.fill")
                     .padding(.trailing, 10)
