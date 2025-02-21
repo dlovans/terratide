@@ -114,6 +114,42 @@ class SingleTideRepository {
         }
     }
     
+    /// Leaves a Tide.
+    /// - Parameters:
+    ///   - tideId: ID of the Tide the user is attempting to leave.
+    ///   - userId: ID of the user attempting to leave a Tide.
+    /// - Returns: Status of attempt to leave a Tide.
+    func leaveTide(tideId: String, userId: String) async -> LeaveTideStatus {
+        if tideId.isEmpty || userId.isEmpty {
+            print("Tide ID or user ID cannot be empty. Failed to leave.")
+            return .invalidData
+        }
+        do {
+            let tide = try await db.collection("tides").document(tideId).getDocument()
+            if !tide.exists {
+                print("Could not find Tide.")
+                return .noDocument
+            }
+            
+            let memberIds = tide.data()?["memberIds"] as? [String] ?? []
+            if !memberIds.contains(userId) {
+                print("User is not a member of Tide.")
+                return .notMember
+            }
+            
+            try await db.collection("tides").document(tideId).updateData([
+                "participantCount": FieldValue.increment(Int64(-1)),
+                "members.\(userId)": FieldValue.delete(),
+                "memberIds": FieldValue.arrayRemove([userId])
+            ])
+            
+            return .left
+        } catch {
+            print("Failed to leave Tide. Error: \(error)")
+            return .failed
+        }
+    }
+    
     /// Fetches a Tide and attaches a document listener.
     /// - Parameters:
     ///   - tideId: ID of Tide to fetch.
