@@ -57,7 +57,7 @@ class SingleTideViewModel: ObservableObject {
     
     /// Attaches a Tide listener.
     /// - Parameter tideId: ID of Tide to fetch and listen to.
-    func attachTideListener(tideId: String) { // TODO: Consider returning status if Tide fails to load.
+    func attachTideListener(tideId: String) {
         let newTideListener = singleTideRepository.attachTideListener(tideId: tideId) { [weak self] tide in
             if let tide {
                 self?.tide = tide
