@@ -9,45 +9,82 @@ import Foundation
 import FirebaseFirestore
 
 class ChatViewModel: ObservableObject {
-    @Published var chatHasLoaded: Bool = false
+    @Published var geoChatHasLoaded: Bool = false
     @Published var geoMessages: [Message] = []
+    @Published var tideChatHasLoaded: Bool = false
+    @Published var tideMessages: [Message] = []
     
     private var chatRepositoy = ChatRepository()
     private var geoChatListener: ListenerRegistration? = nil
+    private var tideChatListener: ListenerRegistration? = nil
     
-    /// Attaches a listener to chat messages.
+    /// Attaches a listener to geo chat messages.
     /// - Parameter userLocation: User location with longitude and latitude values.
-    func attachChatListener(userLocation: Coordinate) { // TODO: Consider returning status if messages fail to load.
-        let newGeoChatListener = chatRepositoy.attachChatListener(for: userLocation) { [weak self] messages in
+    func attachGeoChatListener(userLocation: Coordinate) {
+        let newGeoChatListener = chatRepositoy.attachGeoChatListener(for: userLocation) { [weak self] messages in
             if let messages {
                 self?.geoMessages = messages
             } else {
                 print("Something went wrong while fetching geo messages")
                 self?.geoMessages = []
             }
-            self?.chatHasLoaded = true
+            self?.geoChatHasLoaded = true
         }
         self.geoChatListener?.remove()
         self.geoChatListener = newGeoChatListener
     }
     
     /// Destroys geo chat listener.
-    func removeChatListener() {
-        self.chatHasLoaded = false
+    func removeGeoChatListener() {
+        self.geoChatHasLoaded = false
         self.geoChatListener?.remove()
         self.geoChatListener = nil
         self.geoMessages = []
     }
     
-    
-    /// Calls a method to create a message in database.
+    /// Calls a method to create a geo message in database.
     /// - Parameters:
     ///   - text: Message content.
     ///   - sender: Username of sender.
     ///   - userId: User ID of sender.
     ///   - boundingBox: Geospatial bounding box for this message.
     /// - Returns: Status of message operation.
-    func createMessage(text: String, sender: String, userId: String, boundingBox: BoundingBox?) async -> MessageStatus {
-        return await chatRepositoy.createMessage(with: text, by: sender, with: userId, boundingBox: boundingBox)
+    func createGeoMessage(text: String, sender: String, userId: String, boundingBox: BoundingBox?) async -> MessageStatus {
+        return await chatRepositoy.createGeoMessage(with: text, by: sender, with: userId, boundingBox: boundingBox)
+    }
+    
+    /// Attaches a listener to tide chat messages.
+    /// - Parameter tideId: ID of Tide with `messages` subcollection to fetch and listen to.
+    func attachTideChatListener(tideId: String) {
+        let newTideChatListener = chatRepositoy.attachTideChatListener(for: tideId) { [weak self] messages in
+            if let messages {
+                self?.tideMessages = messages
+            } else {
+                print("Something went wrong while fetching Tide messages")
+                self?.tideMessages = []
+            }
+            self?.tideChatHasLoaded = true
+        }
+        self.tideChatListener?.remove()
+        self.tideChatListener = newTideChatListener
+    }
+    
+    /// Destroys Tide chat listener.
+    func removeTideChatListener() {
+        self.tideChatHasLoaded = false
+        self.tideChatListener?.remove()
+        self.tideChatListener = nil
+        self.tideMessages = []
+    }
+    
+    /// Create a Tide message document in the database.
+    /// - Parameters:
+    ///   - tideId: ID of Tide with `messages` subcollection.
+    ///   - text: Message content.
+    ///   - sender: Username of sender.
+    ///   - userId: User ID of sender.
+    /// - Returns: Status of message operation.
+    func createTideMessage(tideId: String, text: String, sender: String, userId: String) async -> MessageStatus {
+        return await chatRepositoy.createTideMessage(tideId: tideId, with: text, by: sender, with: userId)
     }
 }
