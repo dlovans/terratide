@@ -301,7 +301,7 @@ struct TideChatFieldView: View {
                 Task { @MainActor in
                     let status = await chatViewModel.createTideMessage(
                         tideId: singleTideViewModel.tide?.id ?? "",
-                        text: messageContent,
+                        text: messageContent.trimmingCharacters(in: .whitespacesAndNewlines),
                         sender: userViewModel.user?.username ?? "",
                         userId: userViewModel.user?.id ?? ""
                     )
