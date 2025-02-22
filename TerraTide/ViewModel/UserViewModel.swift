@@ -81,4 +81,13 @@ class UserViewModel: ObservableObject {
     func updateNewUserData(username: String, dateOfBirth: Date) async -> UpdateNewUserStatus {
         return await userRepository.updateNewUserData(username: username, dateOfBirth: dateOfBirth)
     }
+    
+    /// Calls a method to block a user.
+    /// - Parameters:
+    ///   - againstUserId: ID of the user being blocked.
+    ///   - userId: ID of the user requesting to block.
+    /// - Returns: Blocking status.
+    func blockUser(blocking againstUserId: String, againstUsername: String, by userId: String) async -> BlockStatus {
+        return await  userRepository.blockUser(blocking: againstUserId, againstUsername: againstUsername, by: userId)
+    }
 }

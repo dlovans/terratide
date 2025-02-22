@@ -62,6 +62,7 @@ class UserRepository {
                             id: document.documentID,
                             username: data["username"] as? String ?? "",
                             blockedUsers: data["blockedUsers"] as? [String: String] ?? [:],
+                            blockedByUsers: data["blockedByUsers"] as? [String] ?? [],
                             dateOfBirth: data["dateOfBirth"] as? Date ?? Date(),
                             isBanned: data["isBanned"] as? Bool ?? false,
                             banReason: data["banReason"] as? String ?? "",
@@ -116,4 +117,51 @@ class UserRepository {
             return .unAuthenticatedUser
         }
     }
+    
+    /// Blocks a user. Messages and Tides by this user will not be seen.
+    /// - Parameters:
+    ///   - againstUserId: User being blocked.
+    ///   - userId: User attempting to block.
+    /// - Returns: Block status.
+    func blockUser(blocking againstUserId: String, againstUsername: String, by userId: String) async -> BlockStatus {
+        if againstUserId.isEmpty || userId.isEmpty || againstUsername.isEmpty {
+            return .missingData
+        }
+        
+        do {
+            let userBlockingDocument = try await db.collection("users").document(userId).getDocument()
+            if !userBlockingDocument.exists {
+                print("User blocking document does not exist.")
+                return .userBlockingNotFound
+            }
+            
+            let blockingUserBlockedUsers = userBlockingDocument.data()?["blockedUsers"] as? [String:String] ?? [:]
+            if blockingUserBlockedUsers.keys.contains(againstUserId) {
+                print("User was already blocked.")
+                return .alreadyBlocked
+            }
+            
+            let userToBlockDocument = try await db.collection("users").document(againstUserId).getDocument()
+            
+            if !userToBlockDocument.exists {
+                print("User to block does not exist.")
+                return .userToBlockNotFound
+            }
+            
+            try await db.collection( "users" ).document(userId).updateData([
+                "blockedUsers.\(againstUserId)": againstUsername
+            ])
+            
+            try await db.collection( "users" ).document(againstUserId).updateData([
+                "blockedByUsers": FieldValue.arrayUnion( [userId] )
+            ])
+            
+            return .blocked
+        } catch {
+            print("Failed to block user. Error: \(error)")
+            return .failed
+        }
+    }
+    
+    // TODO: Define method for unblocking users.
 }
