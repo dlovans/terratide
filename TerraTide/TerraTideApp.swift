@@ -18,6 +18,7 @@ struct TerraTideApp: App {
     @StateObject private var chatViewModel = ChatViewModel()
     @StateObject private var singleTideViewModel = SingleTideViewModel()
     @StateObject private var tidesViewModel = TidesViewModel()
+    @StateObject private var reportViewModel = ReportViewModel()
 
     var body: some Scene {
         WindowGroup {
@@ -28,6 +29,7 @@ struct TerraTideApp: App {
                 .environmentObject(chatViewModel)
                 .environmentObject(singleTideViewModel)
                 .environmentObject(tidesViewModel)
+                .environmentObject(reportViewModel)
         }
     }
 }
