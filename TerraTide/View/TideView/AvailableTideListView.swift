@@ -59,8 +59,37 @@ struct AvailableTideListView: View {
         .frame(maxHeight: .infinity, alignment: .bottom)
         .onAppear {
             Task { @MainActor in
-                if let userLocation = locationService.userLocation, let userId = userViewModel.user?.id {
-                    tidesViewModel.attachAvailableTidesListener(for: userLocation, userId: userId)
+                if let userLocation = locationService.userLocation, let user = userViewModel.user {
+                    tidesViewModel.attachAvailableTidesListener(
+                        for: userLocation,
+                        userId: user.id,
+                        blockedUsers: user.blockedUsers,
+                        blockedByUsers: user.blockedByUsers
+                    )
+                }
+            }
+        }
+        .onChange(of: userViewModel.user?.blockedUsers) { _, _ in
+            Task {
+                if let userLocation = locationService.userLocation, let user = userViewModel.user {
+                    tidesViewModel.attachAvailableTidesListener(
+                        for: userLocation,
+                        userId: user.id,
+                        blockedUsers: user.blockedUsers,
+                        blockedByUsers: user.blockedByUsers
+                    )
+                }
+            }
+        }
+        .onChange(of: userViewModel.user?.blockedUsers) { _, _ in
+            Task {
+                if let userLocation = locationService.userLocation, let user = userViewModel.user {
+                    tidesViewModel.attachAvailableTidesListener(
+                        for: userLocation,
+                        userId: user.id,
+                        blockedUsers: user.blockedUsers,
+                        blockedByUsers: user.blockedByUsers
+                    )
                 }
             }
         }
@@ -81,6 +110,9 @@ struct TideItemView: View {
     @EnvironmentObject private var userViewModel: UserViewModel
     @State private var actionButtonText: String = "Join"
     @State private var showReportTideSheet: Bool = false
+    @State private var showBlockingAlert: Bool = false
+    @State private var errorMessage: String = ""
+    @State private var displayErrorMessage: Bool = false
     
     var body: some View {
         ZStack {
@@ -155,6 +187,16 @@ struct TideItemView: View {
                     .stroke(Color.black, lineWidth: 1)
                     .blur(radius: 20)
             }
+            .overlay {
+                VStack {
+                    Text(errorMessage)
+                        .foregroundStyle(.white)
+                }
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background(.black)
+                .scaleEffect(displayErrorMessage ? 1 : 0)
+                .animation(.spring, value: displayErrorMessage)
+            }
             
         }
         .frame(maxWidth: .infinity, alignment: .topLeading)
@@ -170,11 +212,64 @@ struct TideItemView: View {
                 } label: {
                     Text("Report")
                 }
+                Button {
+                    showBlockingAlert = true
+                } label: {
+                    Text("Block User")
+                }
             }
         }
         .sheet(isPresented: $showReportTideSheet) {
-            Text(tide.id!)
+            ReportView(reportType: .tide, tideId: tide.id ?? "", reportByUserId: userViewModel.user?.id ?? "", reportAgainstUserId: tide.creatorId, showReportSheet: $showReportTideSheet)
         }
+        .alert("Blocking this user will hide their Tides and messages.", isPresented: $showBlockingAlert) {
+            Button(role: .cancel) {
+                showBlockingAlert = false
+            } label: {
+                Text("Cancel")
+                    .foregroundStyle(.black)
+                    .background(.blue)
+            }
+            Button(role: .destructive) {
+                Task { @MainActor in
+                    let blockStatus = await userViewModel.blockUser(blocking: tide.creatorId, againstUsername: tide.creatorUsername, by: userViewModel.user?.id ?? "")
+                    
+                    var isError: Bool = false
+                    
+                    switch blockStatus {
+                    case .blocked:
+                        showBlockingAlert = false
+                    case .failed:
+                        isError = true
+                        errorMessage = "Failed to block user."
+                    case .alreadyBlocked:
+                        isError = true
+                        errorMessage = "This user is already blocked."
+                    case .missingData:
+                        isError = true
+                        errorMessage = "Something went wrong. Please try again later."
+                    case .userBlockingNotFound:
+                        isError = true
+                        errorMessage = "Could not find the user you are trying to block."
+                    case .userToBlockNotFound:
+                        isError = true
+                        errorMessage = "You aren't authorized. Please try again later."
+                    }
+                    
+                    if isError {
+                        displayErrorMessage = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            displayErrorMessage = false
+                        }
+                    }
+                }
+            } label: {
+                Text("Block \(tide.creatorUsername)")
+            }
+        } message: {
+            Text("\n1. You won't see their Tides or messages anymore.\n\n2. You'll still be able to join the same Tides as long as neither of you are the creators.")
+        }
+
     }
 }
 
