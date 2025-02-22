@@ -27,6 +27,7 @@ struct ChatView: View {
                                     createdBy: message.sender,
                                     userId: message.byUserId,
                                     messageContent: message.text,
+                                    messageId: message.id!,
                                     timeStamp: message.timestamp
                                 )
                                 .id(message.id)
@@ -79,11 +80,14 @@ struct ChatView: View {
 }
 
 struct ChatMessageView: View {
-    @EnvironmentObject private var userViewModel: UserViewModel
     let createdBy: String
     let userId: String
     let messageContent: String
+    let messageId: String
     let timeStamp: Date
+    
+    @EnvironmentObject private var userViewModel: UserViewModel
+    @State private var displayGeoMessageReportSheet: Bool = false
     
     var body: some View {
         VStack(spacing: 0) {
@@ -104,11 +108,16 @@ struct ChatMessageView: View {
                     .background(userViewModel.user?.id == userId ? .green.opacity(0.3) : .orange.opacity(0.3))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .contextMenu {
-                        Button {
-                            // Report msg
-                        } label: {
-                            Text("Report")
+                        if userViewModel.user?.id != userId {
+                            Button {
+                                displayGeoMessageReportSheet = true
+                            } label: {
+                                Text("Report")
+                            }
                         }
+                    }
+                    .sheet(isPresented: $displayGeoMessageReportSheet) {
+                        ReportView(reportType: .geoMessage, messageId: messageId, messageCreatorUsername: createdBy, reportByUserId: userViewModel.user?.id ?? "", reportAgainstUserId: userId, showReportSheet: $displayGeoMessageReportSheet)
                     }
                 
                 if userViewModel.user?.id == userId {
@@ -146,7 +155,7 @@ struct ChatFieldView: View {
                     if let user = userViewModel.user, let boundingBox = locationService.boundingBox {
                         Task { @MainActor in
                             let status = await chatViewModel.createGeoMessage(
-                                text: self.messageContent,
+                                text: self.messageContent.trimmingCharacters(in: .whitespacesAndNewlines),
                                 sender: user.username,
                                 userId: user.id,
                                 boundingBox: boundingBox
