@@ -191,7 +191,7 @@ struct ActiveTideItemView: View {
             }
         }
         .sheet(isPresented: $showReportTideSheet) {
-            Text(tide.id!)
+            ReportView(reportType: .tide, tideId: tide.id ?? "", reportByUserId: userViewModel.user?.id ?? "", reportAgainstUserId: tide.creatorId, showReportSheet: $showReportTideSheet)
         }
     }
 }
