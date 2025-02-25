@@ -16,7 +16,7 @@ class ChatRepository {
     ///   - boundingBox: Tuple representing a bounding box, calculated from a user's position.
     ///   - onUpdate: A closure that runs when fetching messages is completed.
     /// - Returns: Chat messages listener. Use to reset in ChatViewModel to avoid memory leaks.
-    func attachGeoChatListener(for userLocation: Coordinate, onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
+    func attachGeoChatListener(for userLocation: Coordinate, blockedByUsers: [String], blockedUsers: [String: String], onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
         let geoChatListener = db.collection("messages")
             .whereField("longStart", isLessThanOrEqualTo: userLocation.longitude)
             .whereField("longEnd", isGreaterThanOrEqualTo: userLocation.longitude)
@@ -42,7 +42,12 @@ class ChatRepository {
                     return
                 }
                 
-                let geoMessages: [Message] = snapshot.documents.compactMap { message in
+                let filteredMessages = snapshot.documents.filter { message in
+                    let messageCreatorId = message.data()["byUserId"] as? String ?? ""
+                    return !blockedByUsers.contains(messageCreatorId) && !blockedUsers.keys.contains(messageCreatorId)
+                }
+                
+                let geoMessages: [Message] = filteredMessages.compactMap { message in
                     do {
                         return try message.data(as: Message.self)
                     } catch {
@@ -94,7 +99,7 @@ class ChatRepository {
     ///   - tideId: ID of Tide with `messages` subcollection.
     ///   - onUpdate: A closure that runs when fetching messages is completed.
     /// - Returns: Chat messages listener. Use to reset in ChatViewModel to avoid memory leaks.
-    func attachTideChatListener(for tideId: String, onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
+    func attachTideChatListener(for tideId: String, blockedByUsers: [String], blockedUsers: [String: String], onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
         let tideChatListener = db.collection("tides").document(tideId).collection("messages")
             .order(by: "timestamp")
             .limit(to: 100)
@@ -115,7 +120,12 @@ class ChatRepository {
                     return
                 }
                 
-                let tideMessages: [Message] = snapshot.documents.compactMap { message in
+                let filteredMessages = snapshot.documents.filter { message in
+                    let messageCreatorId = message.data()["byUserId"] as? String ?? ""
+                    return !blockedByUsers.contains(messageCreatorId) && !blockedUsers.keys.contains(messageCreatorId)
+                }
+                
+                let tideMessages: [Message] = filteredMessages.compactMap { message in
                     do {
                         return try message.data(as: Message.self)
                     } catch {
