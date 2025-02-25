@@ -61,7 +61,7 @@ struct BanHammerView: View {
                         }
                         .foregroundStyle(.green.opacity(0.8))
                     }
-                    .buttonStyle(RemoveHighlightButtonStyle())
+                    .buttonStyle(TapEffectButtonStyle())
                     
                     Button {
                         UIPasteboard.general.string = email
@@ -89,7 +89,7 @@ struct BanHammerView: View {
                         }
                         .foregroundStyle(.green.opacity(0.8))
                     }
-                    .buttonStyle(RemoveHighlightButtonStyle())
+                    .buttonStyle(TapEffectButtonStyle())
                 }
             }
             VStack {
