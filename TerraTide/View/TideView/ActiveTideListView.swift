@@ -61,7 +61,6 @@ struct ActiveTideListView: View {
     }
 }
 
-// Joined and created tides, sorted by time, descending order.
 struct ActiveTideItemView: View {
     let tide: Tide
 
@@ -100,23 +99,20 @@ struct ActiveTideItemView: View {
                             openingOrLeavingTide = true
                             let status  = await singleTideViewModel.leaveTide(tideId: tide.id ?? "", userId: userViewModel.user?.id ?? "")
                             
-                            var isError: Bool = false
+                            var isError: Bool = true
                             
                             switch status {
                             case .left:
                                 print("Successfully left Tide.")
+                                isError = false
                             case .invalidData:
                                 errorMessage = "Failed to leave :("
-                                isError = true
                             case .noDocument:
                                 errorMessage = "Couldn't find Tide :("
-                                isError = true
                             case .notMember:
                                 errorMessage = "You're not a member of this Tide"
-                                isError = true
                             case .failed:
                                 errorMessage = "Failed to leave, something went wrong. :("
-                                isError = true
                             }
                 
                             if isError {
@@ -142,7 +138,7 @@ struct ActiveTideItemView: View {
                         .disabled(openingOrLeavingTide)
                         
                     }
-                    .buttonStyle(RemoveHighlightButtonStyle())
+                    .buttonStyle(TapEffectButtonStyle())
                     Button {
                         path.append(.tide(tide.id!))
                     } label: {
@@ -157,7 +153,7 @@ struct ActiveTideItemView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 5))
                         
                     }
-                    .buttonStyle(RemoveHighlightButtonStyle())
+                    .buttonStyle(TapEffectButtonStyle())
                     .disabled(openingOrLeavingTide)
                 }
             }
