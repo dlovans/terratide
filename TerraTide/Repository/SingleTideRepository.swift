@@ -51,8 +51,8 @@ class SingleTideRepository {
                 "longEnd": boundingBox.longEnd,
                 "latStart": boundingBox.latStart,
                 "latEnd": boundingBox.latEnd,
-                "active": true, // TODO: Write cloud function making this Tide invisible after expiryDate
-                "primedForDeletion": false, // TODO: Write cloud function priming this Tide for deletion after deletionDate
+                "active": true,
+                "primedForDeletion": false,
                 "memberIds": [byUserID]
             ])
             
