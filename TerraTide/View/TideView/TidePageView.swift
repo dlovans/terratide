@@ -10,6 +10,7 @@ import SwiftUI
 struct TidePageView: View {
     @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @EnvironmentObject private var chatViewModel: ChatViewModel
+    @EnvironmentObject private var userViewModel: UserViewModel
     @Binding var path: [Route]
     @State private var displayChat: Bool = true
     
@@ -59,7 +60,11 @@ struct TidePageView: View {
                         .onAppear {
                             Task { @MainActor in
                                 if !chatViewModel.tideChatHasLoaded {
-                                    chatViewModel.attachTideChatListener(tideId: singleTideViewModel.tide?.id ?? "")
+                                    chatViewModel.attachTideChatListener(
+                                        tideId: singleTideViewModel.tide?.id ?? "",
+                                        blockedByUsers: userViewModel.user?.blockedByUsers ?? [],
+                                        blockedUsers: userViewModel.user?.blockedUsers ?? [:]
+                                    )
                                 }
                             }
                         }
@@ -181,7 +186,7 @@ struct ShareTideView: View {
         .padding()
         .foregroundStyle(.white)
         .background(.orange.opacity(0.7))
-        .buttonStyle(RemoveHighlightButtonStyle())
+        .buttonStyle(TapEffectButtonStyle())
         .cornerRadius(10)
     }
 }
@@ -189,6 +194,8 @@ struct ShareTideView: View {
 struct TideChatView: View {
     @FocusState private var chatFieldIsFocused: Bool
     @EnvironmentObject private var chatViewModel: ChatViewModel
+    @State private var actionFeedbackMessage: String = ""
+    @State private var displayActionFeedbackMessage: Bool = false
     
     var body: some View {
         ZStack {
@@ -201,7 +208,9 @@ struct TideChatView: View {
                                     creatorUsername: message.sender,
                                     creatorId: message.byUserId,
                                     messageContent: message.text,
-                                    timeStamp: message.timestamp
+                                    timeStamp: message.timestamp,
+                                    actionFeedbackMessage: $actionFeedbackMessage,
+                                    displayActionFeedbackMessage: $displayActionFeedbackMessage
                                 )
                                 .id(message.id)
                             }
@@ -222,8 +231,19 @@ struct TideChatView: View {
                     .scrollDismissesKeyboard(.interactively)
                 }
                 
-                TideChatFieldView(chatFieldIsFocused: $chatFieldIsFocused)
+                TideChatFieldView(chatFieldIsFocused: $chatFieldIsFocused, actionFeedbackMessage: $actionFeedbackMessage, displayActionFeedbackMessage: $displayActionFeedbackMessage)
             }
+            
+            Text(actionFeedbackMessage)
+                .padding()
+                .background(.black)
+                .foregroundStyle(.white)
+                .font(.caption)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .offset(x: displayActionFeedbackMessage ? 0 : -500)
+                .animation(.easeInOut, value: displayActionFeedbackMessage)
+                .frame(maxHeight: .infinity, alignment: .center)
+                .opacity(displayActionFeedbackMessage ? 1 : 0)
         }
     }
 }
@@ -233,8 +253,11 @@ struct TideChatMessageView: View {
     let creatorId: String
     let messageContent: String
     let timeStamp: Date
+    @Binding var actionFeedbackMessage: String
+    @Binding var displayActionFeedbackMessage: Bool
         
     @State private var showReportMessageSheet: Bool = false
+    @State private var showBlockingAlert: Bool = false
     @EnvironmentObject private var userViewModel: UserViewModel
     
     var body: some View {
@@ -256,16 +279,60 @@ struct TideChatMessageView: View {
                     .background(userViewModel.user?.id != creatorId ? .green.opacity(0.3) : .orange.opacity(0.3))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .contextMenu {
-                        Button {
-                            showReportMessageSheet = true
-                        } label: {
-                            Text("Report")
+                        if userViewModel.user?.id != creatorId {
+                            Button {
+                                showReportMessageSheet = true
+                            } label: {
+                                Text("Report")
+                            }
+                            Button {
+                                showBlockingAlert = true
+                            } label: {
+                                Text("Block User")
+                            }
                         }
                     }
                     .sheet(isPresented: $showReportMessageSheet) {
                         Text("Reporting message....")
                     }
-                
+                    .alert("Blocking this user will hide their Tides and messages.", isPresented: $showBlockingAlert) {
+                        Button(role: .cancel) {
+                            showBlockingAlert = false
+                        } label: {
+                            Text("Cancel")
+                                .foregroundStyle(.black)
+                                .background(.blue)
+                        }
+                        Button(role: .destructive) {
+                            Task { @MainActor in
+                                let blockStatus = await userViewModel.blockUser(blocking: creatorId, againstUsername: creatorUsername, by: userViewModel.user?.id ?? "")
+                                
+                                switch blockStatus {
+                                case .blocked:
+                                    actionFeedbackMessage = "User blocked!"
+                                case .failed:
+                                    actionFeedbackMessage = "Failed to block user."
+                                case .alreadyBlocked:
+                                    actionFeedbackMessage = "This user is already blocked."
+                                case .missingData:
+                                    actionFeedbackMessage = "Something went wrong. Please try again later."
+                                case .userBlockingNotFound:
+                                    actionFeedbackMessage = "Could not find the user you are trying to block."
+                                case .userToBlockNotFound:
+                                    actionFeedbackMessage = "You aren't authorized. Please try again later."
+                                }
+                                
+                                displayActionFeedbackMessage = true
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                    displayActionFeedbackMessage = false
+                                }
+                            }
+                        } label: {
+                            Text("Block \(creatorUsername)")
+                        }
+                    } message: {
+                        Text("\n1. You won't see their Tides or messages anymore.\n\n2. You'll still be able to join the same Tides as long as neither of you are the creators.")
+                    }
                 if userViewModel.user?.id == creatorId {
                     Text(timeStamp, style: .time)
                         .font(.footnote)
@@ -283,8 +350,12 @@ struct TideChatFieldView: View {
     @EnvironmentObject private var chatViewModel: ChatViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
     @State private var messageContent: String = ""
+    @State private var isSendingMessage: Bool = false
+    @State private var messageWorkItem: DispatchWorkItem?
     
     var chatFieldIsFocused: FocusState<Bool>.Binding
+    @Binding var actionFeedbackMessage: String
+    @Binding var displayActionFeedbackMessage: Bool
     
     var body: some View {
         HStack {
@@ -299,6 +370,10 @@ struct TideChatFieldView: View {
                 }
             Button {
                 Task { @MainActor in
+                    messageWorkItem?.cancel()
+                    displayActionFeedbackMessage = false
+                    isSendingMessage = true
+                    
                     let status = await chatViewModel.createTideMessage(
                         tideId: singleTideViewModel.tide?.id ?? "",
                         text: messageContent.trimmingCharacters(in: .whitespacesAndNewlines),
@@ -306,25 +381,42 @@ struct TideChatFieldView: View {
                         userId: userViewModel.user?.id ?? ""
                     )
                     
-                    switch status { // TODO: Provide feedback to user if message isn't created.
+                    var isError = true
+                    
+                    switch status {
                     case .emptyMessage:
-                        print("Cannot send message without content.")
+                        actionFeedbackMessage = "Message cannot be empty."
                     case .failedToCreate:
-                        print("Failed to send message :(")
+                        actionFeedbackMessage = "Failed to send message :("
                     case .invalidData:
-                        print("Something went wrong while creating the message.")
+                        actionFeedbackMessage = "Something went wrong while creating the message."
                     case .sent:
+                        isError = false
                         messageContent = ""
                     default:
                         print("Unknown error occurred.")
+                        actionFeedbackMessage = "Unknown error occurred!"
                     }
+                    
+                    if isError {
+                        displayActionFeedbackMessage = true
+                        
+                        messageWorkItem = DispatchWorkItem {
+                            displayActionFeedbackMessage = false
+                        }
+                        
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: messageWorkItem!)
+                    }
+                    
+                    isSendingMessage = false
                 }
             } label: {
                 Image(systemName: "paperplane.fill")
                     .padding(.trailing, 10)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(isSendingMessage ? .gray : .orange)
                     .opacity(messageContent.isEmpty ? 0 : 1)
             }
+            .disabled(isSendingMessage)
         }
         .padding(.horizontal,5)
         .overlay {
