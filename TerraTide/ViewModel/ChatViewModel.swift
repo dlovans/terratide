@@ -20,8 +20,8 @@ class ChatViewModel: ObservableObject {
     
     /// Attaches a listener to geo chat messages.
     /// - Parameter userLocation: User location with longitude and latitude values.
-    func attachGeoChatListener(userLocation: Coordinate) {
-        let newGeoChatListener = chatRepositoy.attachGeoChatListener(for: userLocation) { [weak self] messages in
+    func attachGeoChatListener(userLocation: Coordinate, blockedByUsers: [String], blockedUsers: [String: String]) {
+        let newGeoChatListener = chatRepositoy.attachGeoChatListener(for: userLocation, blockedByUsers: blockedByUsers, blockedUsers: blockedUsers) { [weak self] messages in
             if let messages {
                 self?.geoMessages = messages
             } else {
@@ -55,8 +55,8 @@ class ChatViewModel: ObservableObject {
     
     /// Attaches a listener to tide chat messages.
     /// - Parameter tideId: ID of Tide with `messages` subcollection to fetch and listen to.
-    func attachTideChatListener(tideId: String) {
-        let newTideChatListener = chatRepositoy.attachTideChatListener(for: tideId) { [weak self] messages in
+    func attachTideChatListener(tideId: String, blockedByUsers: [String], blockedUsers: [String: String]) {
+        let newTideChatListener = chatRepositoy.attachTideChatListener(for: tideId, blockedByUsers: blockedByUsers, blockedUsers: blockedUsers) { [weak self] messages in
             if let messages {
                 self?.tideMessages = messages
             } else {
