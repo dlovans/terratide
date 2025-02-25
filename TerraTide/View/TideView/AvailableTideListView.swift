@@ -111,8 +111,8 @@ struct TideItemView: View {
     @State private var actionButtonText: String = "Join"
     @State private var showReportTideSheet: Bool = false
     @State private var showBlockingAlert: Bool = false
-    @State private var errorMessage: String = ""
-    @State private var displayErrorMessage: Bool = false
+    @State private var blockStatusMessage: String = ""
+    @State private var displayBlockMessage: Bool = false
     
     var body: some View {
         ZStack {
@@ -142,9 +142,7 @@ struct TideItemView: View {
                                 var hasJoined = false
                                 
                                 switch status {
-                                case .invalidTide:
-                                    actionButtonText = "Could not find Tide :("
-                                case .noDocument:
+                                case .invalidTide, .noDocument:
                                     actionButtonText = "Could not find Tide :("
                                 case .alreadyJoined:
                                     actionButtonText = "Already a member...weird"
@@ -176,7 +174,7 @@ struct TideItemView: View {
                         .clipShape(RoundedRectangle(cornerRadius: 5))
                         
                     }
-                    .buttonStyle(RemoveHighlightButtonStyle())
+                    .buttonStyle(TapEffectButtonStyle())
                     .disabled(attemptingToJoinTide)
                 }
                 
@@ -189,13 +187,13 @@ struct TideItemView: View {
             }
             .overlay {
                 VStack {
-                    Text(errorMessage)
+                    Text(blockStatusMessage)
                         .foregroundStyle(.white)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
                 .background(.black)
-                .scaleEffect(displayErrorMessage ? 1 : 0)
-                .animation(.spring, value: displayErrorMessage)
+                .scaleEffect(displayBlockMessage ? 1 : 0)
+                .animation(.spring, value: displayBlockMessage)
             }
             
         }
@@ -234,33 +232,25 @@ struct TideItemView: View {
                 Task { @MainActor in
                     let blockStatus = await userViewModel.blockUser(blocking: tide.creatorId, againstUsername: tide.creatorUsername, by: userViewModel.user?.id ?? "")
                     
-                    var isError: Bool = false
                     
                     switch blockStatus {
                     case .blocked:
-                        showBlockingAlert = false
+                        blockStatusMessage = "User blocked!"
                     case .failed:
-                        isError = true
-                        errorMessage = "Failed to block user."
+                        blockStatusMessage = "Failed to block user."
                     case .alreadyBlocked:
-                        isError = true
-                        errorMessage = "This user is already blocked."
+                        blockStatusMessage = "This user is already blocked."
                     case .missingData:
-                        isError = true
-                        errorMessage = "Something went wrong. Please try again later."
+                        blockStatusMessage = "Something went wrong. Please try again later."
                     case .userBlockingNotFound:
-                        isError = true
-                        errorMessage = "Could not find the user you are trying to block."
+                        blockStatusMessage = "Could not find the user you are trying to block."
                     case .userToBlockNotFound:
-                        isError = true
-                        errorMessage = "You aren't authorized. Please try again later."
+                        blockStatusMessage = "You aren't authorized. Please try again later."
                     }
                     
-                    if isError {
-                        displayErrorMessage = true
-                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                            displayErrorMessage = false
-                        }
+                    displayBlockMessage = true
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                        displayBlockMessage = false
                     }
                 }
             } label: {
@@ -269,7 +259,7 @@ struct TideItemView: View {
         } message: {
             Text("\n1. You won't see their Tides or messages anymore.\n\n2. You'll still be able to join the same Tides as long as neither of you are the creators.")
         }
-
+        
     }
 }
 
