@@ -7,12 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CA558A0C2D6CF8D800A8B04A /* TODO.md in Resources */ = {isa = PBXBuildFile; fileRef = CA558A0B2D6CF8D800A8B04A /* TODO.md */; };
 		CAB38CEA2D5E585C003C88B6 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CAB38CE92D5E585C003C88B6 /* FirebaseAuth */; };
 		CAB38CEC2D5E5862003C88B6 /* FirebaseFirestore in Frameworks */ = {isa = PBXBuildFile; productRef = CAB38CEB2D5E5862003C88B6 /* FirebaseFirestore */; };
 		CAB38D902D62187D003C88B6 /* FirebaseCore in Frameworks */ = {isa = PBXBuildFile; productRef = CAB38D8F2D62187D003C88B6 /* FirebaseCore */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		CA558A0B2D6CF8D800A8B04A /* TODO.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = TODO.md; sourceTree = "<group>"; };
 		CACD89982D3FE97700E672D5 /* TerraTide.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = TerraTide.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
@@ -48,6 +50,7 @@
 		CACD898F2D3FE97700E672D5 = {
 			isa = PBXGroup;
 			children = (
+				CA558A0B2D6CF8D800A8B04A /* TODO.md */,
 				CAB38CE82D5E585C003C88B6 /* Frameworks */,
 				CACD89992D3FE97700E672D5 /* Products */,
 				CACD899A2D3FE97700E672D5 /* TerraTide */,
@@ -132,6 +135,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				CA558A0C2D6CF8D800A8B04A /* TODO.md in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -290,7 +294,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.dlovan.TerraTide;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.dlovan.terratide;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -321,7 +325,7 @@
 					"@executable_path/Frameworks",
 				);
 				MARKETING_VERSION = 1.0;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.dlovan.TerraTide;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.dlovan.terratide;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
