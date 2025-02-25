@@ -114,12 +114,19 @@ struct SideMenuView: View {
     @Binding var rotateLines: Bool
     @Binding var isTransitioning: Bool
     
+    @EnvironmentObject var userViewModel: UserViewModel
+
     var body: some View {
         ZStack {
             GeometryReader { geometry in
                 HStack (spacing: 0) {
                     VStack {
                         VStack {
+                            if let username = userViewModel.user?.username {
+                                Text("👋 \(username)")
+                                    .foregroundStyle(.white)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
                             Button {
                                 isTransitioning = true
                                 withAnimation {
