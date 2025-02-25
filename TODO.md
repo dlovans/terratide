@@ -7,4 +7,3 @@
 // TODO: Implement Google auth.
 // TODO: Implement Apple auth.-->
 // TODO: Implement age groups.
-// TODO: Joined Tide voting to kick users.
