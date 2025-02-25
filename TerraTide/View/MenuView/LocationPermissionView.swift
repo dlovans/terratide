@@ -29,7 +29,7 @@ struct LocationPermissionView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
 
-                .buttonStyle(RemoveHighlightButtonStyle())
+                .buttonStyle(TapEffectButtonStyle())
             }
             .padding()
         }
