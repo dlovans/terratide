@@ -9,41 +9,51 @@ import SwiftUI
 import FirebaseAuth
 
 struct AuthView: View {
-    @EnvironmentObject private var userViewModel: UserViewModel
+    @EnvironmentObject private var chatViewModel: ChatViewModel
+    @EnvironmentObject private var tidesViewModel: TidesViewModel
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @State private var authType: AuthType = .login
+    @FocusState private var fieldIsFocused: Bool
     @State private var isEmailAuth: Bool = true
     @State private var errorMessage = ""
     @State private var displayErrorMessage: Bool = false
     
     var body: some View {
         ZStack {
-            VStack (spacing: 0) {
-                PresentationView()
-                PhoneEmailAuthView(authType: self.authType, isEmailAuth: $isEmailAuth, errorMessage: $errorMessage, displayErrorMessage: $displayErrorMessage)
+            Color.clear
+                .background(LinearGradient(colors: [.orange, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing))
+                .ignoresSafeArea()
+                .onTapGesture {
+                    fieldIsFocused = false
+                }
+            VStack (spacing: 30) {
+                PhoneEmailAuthView(authType: self.authType, fieldIsFocused: $fieldIsFocused, isEmailAuth: $isEmailAuth, errorMessage: $errorMessage, displayErrorMessage: $displayErrorMessage)
                 AlternativeAuthView(isEmailAuth: $isEmailAuth, authType: self.authType)
+                    .onTapGesture {
+                        fieldIsFocused = false
+                    }
+                Spacer()
                 SwitchAuthView(authType: $authType)
+                    .onTapGesture {
+                        fieldIsFocused = false
+                    }
+            }
+            .padding()
+            .onTapGesture {
+                fieldIsFocused = false
             }
         }
-    }
-}
-
-struct PresentationView: View {
-    var body: some View {
-        Rectangle()
-            .frame(maxWidth: .infinity, maxHeight: 100)
-            .overlay {
-                Circle()
-                    .frame(width: 900, height: 900)
-                    .foregroundStyle(LinearGradient(colors: [.indigo, .orange], startPoint: .top, endPoint: .bottom))
-                
-            }
-        
-            .foregroundStyle(.clear)
-            .offset(y: -400)
-            .overlay {
-                Text("TerraTide")
-                    .font(.headline)
-            }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .onAppear {
+            chatViewModel.removeGeoChatListener()
+            chatViewModel.removeTideChatListener()
+            tidesViewModel.removeActiveTidesListener()
+            tidesViewModel.removeAvailableTidesListener()
+            singleTideViewModel.removeTideListener()
+        }
+        .onTapGesture {
+            fieldIsFocused = false
+        }
     }
 }
 
@@ -54,6 +64,7 @@ struct PhoneEmailAuthView: View {
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var phoneNumber: String = ""
+    var fieldIsFocused: FocusState<Bool>.Binding
     @Binding var isEmailAuth: Bool
     @Binding var errorMessage: String
     @Binding var displayErrorMessage: Bool
@@ -63,7 +74,7 @@ struct PhoneEmailAuthView: View {
             Text(authType == .login ? "Login to TerraTide" : "Join TerraTide")
                 .foregroundStyle(.black)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .font(.title)
+                .font(.title3)
             
             Text(errorMessage)
                 .font(.caption)
@@ -84,6 +95,7 @@ struct PhoneEmailAuthView: View {
                         .accessibilityHint(Text("Enter your email address."))
                         .keyboardType(.emailAddress)
                         .padding()
+                        .focused(fieldIsFocused)
                         .overlay {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(.orange, lineWidth: 1)
@@ -107,6 +119,7 @@ struct PhoneEmailAuthView: View {
                         .accessibilityHint(Text("Enter your password."))
                         .keyboardType(.default)
                         .padding()
+                        .focused(fieldIsFocused)
                         .overlay {
                             RoundedRectangle(cornerRadius: 8)
                                 .stroke(.orange, lineWidth: 1)
@@ -130,6 +143,7 @@ struct PhoneEmailAuthView: View {
                     TextField("", text: $phoneNumber)
                         .padding()
                         .keyboardType(.phonePad)
+                        .focused(fieldIsFocused)
                         .overlay {
                             RoundedRectangle(cornerRadius: 10)
                                 .stroke(.orange, lineWidth: 1)
@@ -142,20 +156,18 @@ struct PhoneEmailAuthView: View {
                                     .allowsHitTesting(false)
                                     .foregroundStyle(.indigo)
                                     .opacity(0.6)
-                                    
+                                
                             }
                         }
                 }
             }
             
             Button {
-                if email.isEmpty || password.isEmpty || password.count < 6 {
+                if email.isEmpty || password.isEmpty {
                     if email.isEmpty {
                         errorMessage = "Please enter an email address."
                     } else if password.isEmpty {
                         errorMessage = "Please enter a password."
-                    } else if password.count < 6 {
-                        errorMessage = "Password must be at least 6 characters long."
                     }
                     
                     withAnimation {
@@ -172,7 +184,7 @@ struct PhoneEmailAuthView: View {
                 if authType == .login {
                     authViewModel.signInWithEmailAndPassword(email: email, password: password) { result in
                         switch result {
-                            case .success:
+                        case .success:
                             Task { @MainActor in
                                 // In case user was created with FirebaseAuth but not in Firestore
                                 let status = await userViewModel.createUser()
@@ -188,26 +200,19 @@ struct PhoneEmailAuthView: View {
                                     }
                                 }
                             }
-                                
-                            case .failure(let error):
+                        case .failure(let error):
                             if let authError = error as? AuthErrorCode {
                                 switch authError {
                                 case .accountExistsWithDifferentCredential:
                                     errorMessage = "This email address is already in use. Try logging in with Google or Apple."
-                                case .userNotFound:
-                                    errorMessage = "This email address is not registered. Try signing up."
+                                case .userNotFound, .invalidCredential, .wrongPassword:
+                                    errorMessage = "Invalid email or password."
                                 case .emailAlreadyInUse:
                                     errorMessage = "You're already logged in. Delete local app data and try again."
                                 case .invalidEmail:
                                     errorMessage = "Invalid email address. Check your spelling and try again."
-                                case .weakPassword:
-                                    errorMessage = "Password must be at least 6 characters long."
-                                case .missingEmail:
-                                    errorMessage = "Email address is required."
-                                case .wrongPassword:
-                                    errorMessage = "Wrong email or password"
                                 default:
-                                    errorMessage = "An error occurred"
+                                    errorMessage = "An error occurred while trying to log in. Try again later."
                                 }
                             } else {
                                 errorMessage = "An error occurred while logging in. Try again later."
@@ -253,20 +258,9 @@ struct PhoneEmailAuthView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .foregroundStyle(.white)
             }
-            .buttonStyle(RemoveHighlightButtonStyle())
-            
+            .buttonStyle(TapEffectButtonStyle())
             .accessibilityHint(Text("Click to \(authType == .login ? "login" : "join")."))
-            
         }
-        .padding()
-    }
-}
-
-struct RemoveHighlightButtonStyle: ButtonStyle {
-    func makeBody(configuration: Configuration) -> some View {
-        configuration.label
-            .scaleEffect(configuration.isPressed ? 0.9 : 1)
-            .animation(.easeInOut(duration: 0.2), value: configuration.isPressed)
     }
 }
 
@@ -277,33 +271,38 @@ struct AlternativeAuthView: View {
     
     var body: some View {
         VStack (spacing: 20) {
-            ZStack {
-                Rectangle()
-                    .foregroundColor(.orange)
-                    .opacity(0.9)
-                    .frame(maxWidth: .infinity, maxHeight: 2)
-                Text("Or")
-                    .padding(.horizontal, 5)
-                    .background(Color.white)
-            }
+                HStack {
+                    Rectangle()
+                        .foregroundStyle(LinearGradient(colors: [.clear, .orange], startPoint: .leading, endPoint: .trailing))
+                        .opacity(0.9)
+                        .frame(maxWidth: .infinity, maxHeight: 2)
+                    Text("Or")
+                        .foregroundStyle(.white)
+                        .padding(.horizontal, 5)
+                    Rectangle()
+                        .foregroundStyle(LinearGradient(colors: [.orange, .clear], startPoint: .leading, endPoint: .trailing))
+                        .opacity(0.9)
+                        .frame(maxWidth: .infinity, maxHeight: 2)
+                }
+                .padding(.bottom, 5)
             
             VStack {
-//                Button {
-//                    withAnimation {
-//                        isEmailAuth.toggle()
-//                    }
-//                } label: {
-//                    HStack {
-//                        Image(systemName: isEmailAuth ? "phone" : "mail")
-//                        Text("\(authType == .login ? "Continue with" : "Signup with") \(isEmailAuth ? "Phone Number" : "Email")")
-//                    }
-//                    .foregroundStyle(.white)
-//                    .frame(maxWidth: .infinity)
-//                    .padding()
-//                    .background(.black)
-//                    .clipShape(RoundedRectangle(cornerRadius: 10))
-//                }
-//                .buttonStyle(RemoveHighlightButtonStyle())
+                Button {
+                    withAnimation {
+                        isEmailAuth.toggle()
+                    }
+                } label: {
+                    HStack {
+                        Image(systemName: isEmailAuth ? "phone" : "mail")
+                        Text("\(authType == .login ? "Continue with" : "Signup with") \(isEmailAuth ? "Phone Number" : "Email")")
+                    }
+                    .foregroundStyle(.white)
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.black)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(TapEffectButtonStyle())
                 
                 Button {
                     if authType == .login {
@@ -312,19 +311,19 @@ struct AlternativeAuthView: View {
                         print("Joining TerraTide with Apple")
                     }
                 } label: {
-                        HStack {
-                            Image(systemName: "applelogo")
-                                .resizable()
-                                .frame(width: 20, height: 20)
-                            Text(authType == .login ? "Continue with Apple" : "Signup with Apple")
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding()
-                        .background(.black)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 10))
+                    HStack {
+                        Image(systemName: "applelogo")
+                            .resizable()
+                            .frame(width: 20, height: 20)
+                        Text(authType == .login ? "Continue with Apple" : "Signup with Apple")
                     }
-                    .buttonStyle(RemoveHighlightButtonStyle())
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(.black)
+                    .foregroundStyle(.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                }
+                .buttonStyle(TapEffectButtonStyle())
                 
                 Button {
                     if authType == .login {
@@ -345,11 +344,9 @@ struct AlternativeAuthView: View {
                     .foregroundStyle(.white)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
-                .buttonStyle(RemoveHighlightButtonStyle())
+                .buttonStyle(TapEffectButtonStyle())
             }
         }
-        .frame(maxHeight: .infinity, alignment: .top)
-        .padding()
     }
 }
 
