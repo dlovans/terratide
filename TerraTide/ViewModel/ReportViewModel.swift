@@ -20,7 +20,7 @@ class ReportViewModel: ObservableObject {
     ///   - reportContent: Report reason provided by the reporting user.
     ///   - reportCategory: Report category reason.
     /// - Returns: Report creation status.
-    func reportTideOrMessage(
+    func report(
         reportType: ReportType,
         tideId: String? = nil,
         messageId: String? = nil,
@@ -29,7 +29,7 @@ class ReportViewModel: ObservableObject {
         reportContent: String,
         reportCategory: ReportCategory
     ) async -> ReportStatus {
-        return await reportRepository.reportTideOrMessage(
+        return await reportRepository.report(
             reportType: reportType,
             tideId: tideId,
             messageId: messageId,
