@@ -26,6 +26,11 @@ struct CreateTideView: View {
     
     @FocusState private var participantsIsFocused: Bool
     
+    @State private var errorMessage: String = ""
+    @State private var displayErrorMessage: Bool = false
+    @State private var messageWorkItem: DispatchWorkItem?
+    @State private var isCreatingTide: Bool = false
+    
     private var tideIsValid: Bool {
         !title.isEmpty && maxParticipants > 1 && maxParticipants <= 10000 && !description.isEmpty && locationService.boundingBox != nil
     }
@@ -80,48 +85,57 @@ struct CreateTideView: View {
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 
-                ZStack {
-                    TextField("", text: $title)
-                        .padding()
-                        .focused($titleIsFocused)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(.black, lineWidth: 1)
-                        }
-                    HStack {
+                TextField("", text: $title, axis: .vertical)
+                    .lineLimit(1)
+                    .padding()
+                    .focused($titleIsFocused)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(.black, lineWidth: 1)
+                    }
+                    .overlay {
                         Text("Tide Title")
                             .opacity(titleIsFocused || !title.isEmpty ? 0.8 : 0.5)
                             .padding(.horizontal, 3)
                             .background(.white)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .frame(maxHeight: .infinity, alignment: .center)
+                            .padding(.leading, 12)
+                            .offset(y: titleIsFocused || !title.isEmpty ? -28 : 0)
+                            .animation(.easeInOut(duration: 0.2), value: titleIsFocused)
+                            .allowsHitTesting(false)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 12)
-                    .offset(y: titleIsFocused || !title.isEmpty ? -28 : 0)
-                    .animation(.easeInOut(duration: 0.2), value: titleIsFocused)
-                    .allowsHitTesting(false)
-                }
-                .padding(.top)
-                
-                ZStack {
-                    TextField("", text: $description)
-                        .padding()
-                        .focused($descIsFocused)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(.black, lineWidth: 1)
+                    .onChange(of: title) { _, newValue in
+                        if newValue.count > 30 {
+                            title = String(newValue.prefix(30))
                         }
-                    HStack {
+                    }
+                
+                TextField("", text: $description, axis: .vertical)
+                    .lineLimit(6, reservesSpace: true)
+                    .padding()
+                    .focused($descIsFocused)
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 10)
+                            .stroke(.black, lineWidth: 1)
+                    }
+                    .overlay {
                         Text("Description")
                             .opacity(descIsFocused || !description.isEmpty ? 0.8 : 0.5)
                             .padding(.horizontal, 3)
                             .background(.white)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                            .padding(.leading, 12)
+                            .padding(.top, 10)
+                            .offset(y: descIsFocused || !description.isEmpty ? -20 : 0)
+                            .animation(.easeInOut(duration: 0.2), value: descIsFocused)
+                            .allowsHitTesting(false)
                     }
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                    .padding(.leading, 12)
-                    .offset(y: descIsFocused || !description.isEmpty ? -28 : 0)
-                    .animation(.easeInOut(duration: 0.2), value: descIsFocused)
-                    .allowsHitTesting(false)
-                }
+                    .onChange(of: description) { _, newValue in
+                        if newValue.count > 300 {
+                            description = String(newValue.prefix(300))
+                        }
+                    }
                 
                 HStack {
                     Text("Max participants?")
@@ -152,48 +166,71 @@ struct CreateTideView: View {
                 
                 Button {
                     Task { @MainActor in
-                        if tideIsValid {
-                            Task { @MainActor in
-                                let result = await tideViewModel.createTide(
-                                    byUserID: self.userViewModel.user?.id ?? "",
-                                    byUsername: self.userViewModel.user?.username ?? "",
-                                    tideTitle: self.title,
-                                    tideDescription: self.description,
-                                    maxParticipants: self.maxParticipants,
-                                    boundingBox: locationService.boundingBox!
-                                )
-                                
-                                // TODO: Display error message on response.
-                                switch result {
-                                case .created(let newTideID):
-                                    withAnimation {
-                                        path.removeAll { $0 == .general("createTide") }
-                                        path.append(.tide(newTideID))
-                                    }
-                                case .missingCredentials:
-                                    print("Missing user credentials!")
-                                case .invalidData:
-                                    print("Tide data is invalid. Couldn't create Tide")
-                                case .missingTideId:
-                                    print("Tide was created but no Tide ID was returned!")
-                                case .failed:
-                                    print("Something went wrong while creating the Tide!")
-                                }
+                        isCreatingTide = true
+                        titleIsFocused = false; participantsIsFocused = false; descIsFocused = false
+                        messageWorkItem?.cancel()
+                        displayErrorMessage = false
+                        let result = await tideViewModel.createTide(
+                            byUserID: self.userViewModel.user?.id ?? "",
+                            byUsername: self.userViewModel.user?.username ?? "",
+                            tideTitle: self.title,
+                            tideDescription: self.description,
+                            maxParticipants: self.maxParticipants,
+                            boundingBox: locationService.boundingBox!
+                        )
+                        
+                        var isError = true
+                        switch result {
+                        case .created(let newTideID):
+                            isError = false
+                            withAnimation {
+                                path.removeAll { $0 == .general("createTide") }
+                                path.append(.tide(newTideID))
                             }
+                        case .missingCredentials:
+                            errorMessage = "Missing user credentials!"
+                        case .invalidData:
+                            errorMessage = "Tide data is invalid. Couldn't create Tide."
+                        case .missingTideId:
+                            errorMessage = "Tide was created but no Tide was returned!"
+                        case .failed:
+                            errorMessage = "Something went wrong while creating the Tide!"
+                        }
+                        
+                        if isError {
+                            displayErrorMessage = true
+                            
+                            messageWorkItem = DispatchWorkItem {
+                                displayErrorMessage = false
+                            }
+                            
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 3, execute: messageWorkItem!)
+                            isCreatingTide = false
                         }
                     }
-
+                    
                 } label: {
                     Text("Three is a company")
                         .foregroundStyle(.white)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(!tideIsValid ? .gray : .orange)
+                        .background(!tideIsValid ? LinearGradient(colors: [.gray, .gray], startPoint: .leading, endPoint: .trailing) : LinearGradient(colors: [.indigo, .orange], startPoint: .leading, endPoint: .trailing))
                         .clipShape(RoundedRectangle(cornerRadius: 10))
                         .animation(.easeInOut, value: tideIsValid)
                 }
-                .buttonStyle(RemoveHighlightButtonStyle())
-                .disabled(!tideIsValid)
+                .buttonStyle(TapEffectButtonStyle())
+                .disabled(!tideIsValid || isCreatingTide)
+                
+                Text(errorMessage)
+                    .padding()
+                    .frame(maxWidth: .infinity, alignment: .center)
+                    .background(.black)
+                    .foregroundStyle(.white)
+                    .font(.caption)
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .offset(x: displayErrorMessage ? 0 : -500)
+                    .opacity(displayErrorMessage ? 1 : 0)
+                    .animation(.easeInOut, value: displayErrorMessage)
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         }
