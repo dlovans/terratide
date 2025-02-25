@@ -162,6 +162,4 @@ class UserRepository {
             return .failed
         }
     }
-    
-    // TODO: Define method for unblocking users.
 }
