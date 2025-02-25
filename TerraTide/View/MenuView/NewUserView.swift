@@ -119,7 +119,7 @@ struct NewUserView: View {
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .animation(.easeInOut, value: usernameIsValid)
             }
-            .buttonStyle(RemoveHighlightButtonStyle())
+            .buttonStyle(TapEffectButtonStyle())
         }
         .padding()
     }

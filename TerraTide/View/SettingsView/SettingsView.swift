@@ -34,7 +34,7 @@ struct SettingsView: View {
                 }
                 
                 Button {
-                    // Blocked users...to unblock
+                    // Blocked users view...to unblock
                 } label: {
                     HStack {
                         Text("Blocked Users")
@@ -77,7 +77,7 @@ struct SettingsView: View {
                 }
                 
             }
-            .buttonStyle(RemoveHighlightButtonStyle())
+            .buttonStyle(TapEffectButtonStyle())
             .frame(maxHeight: .infinity, alignment: .top)
             .padding(.top, 10)
             
