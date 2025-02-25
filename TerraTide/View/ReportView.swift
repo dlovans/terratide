@@ -95,7 +95,7 @@ struct ReportView: View {
                             .background(reportIsSending ? .gray : .red)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
-                    .buttonStyle(RemoveHighlightButtonStyle())
+                    .buttonStyle(TapEffectButtonStyle())
                     .disabled(reportIsSending)
                     
                     Button {
@@ -106,9 +106,9 @@ struct ReportView: View {
                             var status: ReportStatus
                             
                             if reportType == .geoMessage || reportType == .tideMessage {
-                                status = await reportViewModel.reportTideOrMessage(reportType: reportType, messageId: messageId, reportByUserId: reportByUserId, reportAgainstUserId: reportAgainstUserId, reportContent: reportContent, reportCategory: reportCategory)
+                                status = await reportViewModel.report(reportType: reportType, messageId: messageId, reportByUserId: reportByUserId, reportAgainstUserId: reportAgainstUserId, reportContent: reportContent, reportCategory: reportCategory)
                             } else {
-                                status = await reportViewModel.reportTideOrMessage(reportType: reportType, tideId: tideId, reportByUserId: reportByUserId, reportAgainstUserId: reportAgainstUserId, reportContent: reportContent, reportCategory: reportCategory)
+                                status = await reportViewModel.report(reportType: reportType, tideId: tideId, reportByUserId: reportByUserId, reportAgainstUserId: reportAgainstUserId, reportContent: reportContent, reportCategory: reportCategory)
                             }
                                                         
                             switch status {
@@ -138,7 +138,7 @@ struct ReportView: View {
                             .background(!reportIsValid || reportIsSending || reportSent ? .gray : .green)
                             .clipShape(RoundedRectangle(cornerRadius: 10))
                     }
-                    .buttonStyle(RemoveHighlightButtonStyle())
+                    .buttonStyle(TapEffectButtonStyle())
                     .disabled(!reportIsValid || reportIsSending || reportSent)
                 }
                     
