@@ -99,4 +99,14 @@ class UserViewModel: ObservableObject {
     func unblockUser(userId: String, blockedUserId: String) async -> UnblockStatus {
         return await userRepository.unblockUser(userId: userId, blockedUserId: blockedUserId)
     }
+    
+    /// Creates a feedback document.
+    /// - Parameters:
+    ///   - respondentEmail: Email of user providing feedback. Can be empty if user doesn't prefer a feedback on the feedback.
+    ///   - feedbackText: Feedback of the user.
+    ///   - byUserId: User ID of the user creating the feedback.
+    /// - Returns: Whether feedback was created or not.
+    func createFeedback(respondentEmail: String = "", feedbackText: String, byUserId: String) async -> Bool {
+        return await userRepository.createFeedback(respondentEmail: respondentEmail, feedbackText: feedbackText, byUserId: byUserId)
+    }
 }

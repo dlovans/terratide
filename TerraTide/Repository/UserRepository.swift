@@ -208,5 +208,25 @@ class UserRepository {
             return .failed
         }
     }
-
+    
+    /// Creates a feedback document.
+    /// - Parameters:
+    ///   - respondentEmail: Email of user providing feedback. Can be empty if user doesn't prefer a feedback on the feedback.
+    ///   - feedbackText: Feedback of the user.
+    ///   - byUserId: User ID of the user creating the feedback.
+    /// - Returns: Whether feedback was created or not.
+    func createFeedback(respondentEmail: String = "", feedbackText: String, byUserId: String) async -> Bool {
+        do {
+            try await db.collection("feedbacks").addDocument(data: [
+                "respondentEmail": respondentEmail,
+                "feedbackText": feedbackText,
+                "createdAt": FieldValue.serverTimestamp(),
+                "byUserId": byUserId
+            ])
+            return true
+        } catch {
+            print("Failed to create feedback :(")
+            return false
+        }
+    }
 }
