@@ -96,63 +96,81 @@ struct TidePageView: View {
 struct TideDetailsView: View {
     @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
+    @State private var actionFeedbackMessage: String = ""
+    @State private var displayActionFeedbackMessage: Bool = false
     
     var body: some View {
-        VStack {
-            VStack(spacing: 10) {
-                HStack {
-                    Text("Creator:")
-                    Spacer()
-                    Text("Dlovan")
-                }
-                .frame(maxWidth: .infinity)
-                
-                HStack {
-                    Text("Tide Size:")
-                    Spacer()
-                    Text("\(singleTideViewModel.tide?.participantCount ?? 1)/\(singleTideViewModel.tide?.maxParticipants ?? 10)")
-                }
-                
-                Text(singleTideViewModel.tide?.description ?? "")
-                    .frame(maxWidth: .infinity, alignment: .leading)
-                
-                Divider()
-                
-                VStack {
-                    Text("Members:")
+        ZStack {
+            VStack {
+                VStack(spacing: 10) {
+                    HStack {
+                        Text("Creator:")
+                        Spacer()
+                        Text("Dlovan")
+                    }
+                    .frame(maxWidth: .infinity)
+                    
+                    HStack {
+                        Text("Tide Size:")
+                        Spacer()
+                        Text("\(singleTideViewModel.tide?.participantCount ?? 1)/\(singleTideViewModel.tide?.maxParticipants ?? 10)")
+                    }
+                    
+                    Text(singleTideViewModel.tide?.description ?? "")
                         .frame(maxWidth: .infinity, alignment: .leading)
-                    ScrollView {
-                        LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 100)), count: 3), spacing: 10) {
-                
-                            TideMemberView(userId: singleTideViewModel.tide?.creatorId ?? "", username: singleTideViewModel.tide?.creatorUsername ?? "")
-                            if let memberIds = singleTideViewModel.tide?.members {
-                                ForEach(memberIds.keys.sorted().filter { $0 != singleTideViewModel.tide?.creatorId ?? ""}, id: \.self) { memberId in
-                                    if let memberUsername = memberIds[memberId] {
-                                        TideMemberView(userId: memberId, username: memberUsername)
+                    
+                    Divider()
+                    
+                    VStack {
+                        Text("Members:")
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        ScrollView {
+                            LazyVGrid(columns: Array(repeating: GridItem(.flexible(minimum: 100)), count: 3), spacing: 10) {
+                                
+                                TideMemberView(userId: singleTideViewModel.tide?.creatorId ?? "", username: singleTideViewModel.tide?.creatorUsername ?? "", actionFeedbackMessage: $actionFeedbackMessage, displayActionFeedbackMessage: $displayActionFeedbackMessage)
+                                if let memberIds = singleTideViewModel.tide?.members {
+                                    ForEach(memberIds.keys.sorted().filter { $0 != singleTideViewModel.tide?.creatorId ?? ""}, id: \.self) { memberId in
+                                        if let memberUsername = memberIds[memberId] {
+                                            TideMemberView(userId: memberId, username: memberUsername, actionFeedbackMessage: $actionFeedbackMessage, displayActionFeedbackMessage: $displayActionFeedbackMessage)
+                                        }
                                     }
                                 }
                             }
                         }
+                        .scrollIndicators(.hidden)
                     }
-                    .scrollIndicators(.hidden)
+                    .frame(maxHeight: .infinity)
                 }
-                .frame(maxHeight: .infinity)
+                .padding()
+                .overlay {
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(.black, lineWidth: 1)
+                }
             }
-            .padding()
-            .overlay {
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(.black, lineWidth: 1)
-            }
+            Text(actionFeedbackMessage)
+                .padding()
+                .background(.black)
+                .foregroundStyle(.white)
+                .font(.caption)
+                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .offset(x: displayActionFeedbackMessage ? 0 : -500)
+                .frame(maxHeight: .infinity, alignment: .center)
+                .opacity(displayActionFeedbackMessage ? 1 : 0)
+                .animation(.easeInOut, value: displayActionFeedbackMessage)
+            
         }
     }
 }
 
 struct TideMemberView: View {
     @EnvironmentObject private var userViewModel: UserViewModel
-    @State private var showReportUserSheet: Bool = false
-
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
+    @State private var displayBlockingAlert: Bool = false
+    
     let userId: String
     let username: String
+    @Binding var actionFeedbackMessage: String
+    @Binding var displayActionFeedbackMessage: Bool
     
     var body: some View {
         Text(username)
@@ -161,17 +179,43 @@ struct TideMemberView: View {
             .background(userViewModel.user?.id == userId ? .black : .orange.opacity(0.3))
             .foregroundStyle(userViewModel.user?.id == userId ? .white : .black)
             .clipShape(RoundedRectangle(cornerRadius: 10))
-            .contextMenu {
-                Button {
-                    showReportUserSheet = true
+            .alert("Blocking this user will hide their Tides and messages.", isPresented: $displayBlockingAlert) {
+                Button(role: .cancel) {
+                    displayBlockingAlert = false
                 } label: {
-                    HStack {
-                        Text("Report")
-                    }
+                    Text("Cancel")
+                        .foregroundStyle(.black)
+                        .background(.blue)
                 }
-            }
-            .sheet(isPresented: $showReportUserSheet) {
-                Text(username)
+                Button(role: .destructive) {
+                    Task { @MainActor in
+                        let blockStatus = await userViewModel.blockUser(blocking: userId, againstUsername: username, by: userViewModel.user?.id ?? "")
+                        
+                        switch blockStatus {
+                        case .blocked:
+                            actionFeedbackMessage = "User blocked!"
+                        case .failed:
+                            actionFeedbackMessage = "Failed to block user."
+                        case .alreadyBlocked:
+                            actionFeedbackMessage = "This user is already blocked."
+                        case .missingData:
+                            actionFeedbackMessage = "Something went wrong. Please try again later."
+                        case .userBlockingNotFound:
+                            actionFeedbackMessage = "Could not find the user you are trying to block."
+                        case .userToBlockNotFound:
+                            actionFeedbackMessage = "You aren't authorized. Please try again later."
+                        }
+                        
+                        displayActionFeedbackMessage = true
+                        DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                            displayActionFeedbackMessage = false
+                        }
+                    }
+                } label: {
+                    Text("Block \(username)")
+                }
+            } message: {
+                Text("\n1. You won't see their Tides or messages anymore.\n\n2. You'll still be able to join the same Tides as long as neither of you are the creators.")
             }
     }
     
@@ -255,7 +299,7 @@ struct TideChatMessageView: View {
     let timeStamp: Date
     @Binding var actionFeedbackMessage: String
     @Binding var displayActionFeedbackMessage: Bool
-        
+    
     @State private var showReportMessageSheet: Bool = false
     @State private var showBlockingAlert: Bool = false
     @EnvironmentObject private var userViewModel: UserViewModel

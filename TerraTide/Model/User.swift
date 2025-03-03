@@ -12,7 +12,7 @@ struct User {
     let username: String
     let blockedUsers: [String: String]
     let blockedByUsers: [String]
-    let dateOfBirth: Date?
+    let adult: Bool
     let isBanned: Bool
     let banReason: String
     let banLiftDate: Date?

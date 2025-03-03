@@ -75,14 +75,14 @@ struct ChatView: View {
         .onAppear {
             if let userLocation = locationService.userLocation, let user = userViewModel.user {
                 Task { @MainActor in
-                    chatViewModel.attachGeoChatListener(userLocation: userLocation, blockedByUsers: user.blockedByUsers, blockedUsers: user.blockedUsers)
+                    chatViewModel.attachGeoChatListener(userLocation: userLocation, adult: user.adult, blockedByUsers: user.blockedByUsers, blockedUsers: user.blockedUsers)
                 }
             }
         }
         .onChange(of: locationService.userLocation) { _, newValue in
             if let userLocation = locationService.userLocation, let user = userViewModel.user {
                 Task { @MainActor in
-                    chatViewModel.attachGeoChatListener(userLocation: userLocation, blockedByUsers: user.blockedByUsers, blockedUsers: user.blockedUsers)
+                    chatViewModel.attachGeoChatListener(userLocation: userLocation, adult: user.adult, blockedByUsers: user.blockedByUsers, blockedUsers: user.blockedUsers)
                 }
             }
         }
@@ -232,7 +232,8 @@ struct ChatFieldView: View {
                                 text: self.messageContent.trimmingCharacters(in: .whitespacesAndNewlines),
                                 sender: user.username,
                                 userId: user.id,
-                                boundingBox: boundingBox
+                                boundingBox: boundingBox,
+                                adult: user.adult
                             )
                             
                             var isError = true

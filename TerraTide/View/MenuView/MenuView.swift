@@ -55,7 +55,7 @@ struct MenuView: View {
                     }
                     
                     Tab(value: 3) {
-                        SettingsView()
+                        SettingsView(path: $path)
                             .onAppear {
                                 if currentPage == 3 && isTransitioning {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -78,6 +78,9 @@ struct MenuView: View {
                     case let .general(routeName):
                         if routeName == "createTide" {
                             CreateTideView(path: $path)
+                                .navigationBarBackButtonHidden()
+                        } else if routeName == "blockedUsers" {
+                            BlockedUsersView(path: $path)
                                 .navigationBarBackButtonHidden()
                         }
                     case let .tide(tideId):

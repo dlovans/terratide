@@ -17,4 +17,5 @@ struct Tide: Identifiable, Hashable, Equatable, Codable {
     let maxParticipants: Int
     let members: [String: String]
     let memberIds: [String]
+    let adult: Bool
 }

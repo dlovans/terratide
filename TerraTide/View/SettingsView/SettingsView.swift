@@ -8,10 +8,13 @@
 import SwiftUI
 
 struct SettingsView: View {
+    @Binding var path: [Route]
+    
     @EnvironmentObject var authViewModel: AuthViewModel
     @EnvironmentObject var userViewModel: UserViewModel
     @EnvironmentObject var tidesViewModel: TidesViewModel
-    @State private var  displayErrorMessage: Bool = false
+    @State private var displayFeedbackSheet: Bool = false
+    @State private var displayErrorMessage: Bool = false
     @State private var errorMessage: String = ""
     @State private var errorWorkItem: DispatchWorkItem?
     
@@ -20,7 +23,7 @@ struct SettingsView: View {
             VStack(spacing: 20) {
                 Text("Settings")
                 Button {
-                    // Feedback sheet
+                    displayFeedbackSheet = true
                 } label: {
                     HStack {
                         Text("Feedback")
@@ -34,7 +37,7 @@ struct SettingsView: View {
                 }
                 
                 Button {
-                    // Blocked users view...to unblock
+                    path.append(.general("blockedUsers"))
                 } label: {
                     HStack {
                         Text("Blocked Users")
@@ -88,15 +91,18 @@ struct SettingsView: View {
                 .font(.caption)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .offset(x: displayErrorMessage ? 0 : -500)
-                .animation(.easeInOut, value: displayErrorMessage)
                 .frame(maxHeight: .infinity, alignment: .bottom)
                 .opacity(displayErrorMessage ? 1 : 0)
+                .animation(.easeInOut, value: displayErrorMessage)
         }
         .frame(maxHeight: .infinity, alignment: .top)
         .padding()
+        .sheet(isPresented: $displayFeedbackSheet) {
+            FeedbackView(showFeedbackSheet: $displayFeedbackSheet)
+        }
     }
 }
 
 #Preview {
-    SettingsView()
+    SettingsView(path: .constant([]))
 }

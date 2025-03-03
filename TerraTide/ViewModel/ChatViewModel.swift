@@ -20,8 +20,8 @@ class ChatViewModel: ObservableObject {
     
     /// Attaches a listener to geo chat messages.
     /// - Parameter userLocation: User location with longitude and latitude values.
-    func attachGeoChatListener(userLocation: Coordinate, blockedByUsers: [String], blockedUsers: [String: String]) {
-        let newGeoChatListener = chatRepositoy.attachGeoChatListener(for: userLocation, blockedByUsers: blockedByUsers, blockedUsers: blockedUsers) { [weak self] messages in
+    func attachGeoChatListener(userLocation: Coordinate, adult: Bool, blockedByUsers: [String], blockedUsers: [String: String]) {
+        let newGeoChatListener = chatRepositoy.attachGeoChatListener(for: userLocation, adult: adult, blockedByUsers: blockedByUsers, blockedUsers: blockedUsers) { [weak self] messages in
             if let messages {
                 self?.geoMessages = messages
             } else {
@@ -49,8 +49,8 @@ class ChatViewModel: ObservableObject {
     ///   - userId: User ID of sender.
     ///   - boundingBox: Geospatial bounding box for this message.
     /// - Returns: Status of message operation.
-    func createGeoMessage(text: String, sender: String, userId: String, boundingBox: BoundingBox?) async -> MessageStatus {
-        return await chatRepositoy.createGeoMessage(with: text, by: sender, with: userId, boundingBox: boundingBox)
+    func createGeoMessage(text: String, sender: String, userId: String, boundingBox: BoundingBox?, adult: Bool) async -> MessageStatus {
+        return await chatRepositoy.createGeoMessage(with: text, by: sender, with: userId, boundingBox: boundingBox, adult: adult)
     }
     
     /// Attaches a listener to tide chat messages.

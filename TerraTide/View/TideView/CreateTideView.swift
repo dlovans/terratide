@@ -166,18 +166,24 @@ struct CreateTideView: View {
                 
                 Button {
                     Task { @MainActor in
+                        let result: TideCreationStatus
                         isCreatingTide = true
                         titleIsFocused = false; participantsIsFocused = false; descIsFocused = false
                         messageWorkItem?.cancel()
                         displayErrorMessage = false
-                        let result = await tideViewModel.createTide(
-                            byUserID: self.userViewModel.user?.id ?? "",
-                            byUsername: self.userViewModel.user?.username ?? "",
-                            tideTitle: self.title,
-                            tideDescription: self.description,
-                            maxParticipants: self.maxParticipants,
-                            boundingBox: locationService.boundingBox!
-                        )
+                            if let user = userViewModel.user {
+                               result = await tideViewModel.createTide(
+                                    byUserID: self.userViewModel.user?.id ?? "",
+                                    byUsername: self.userViewModel.user?.username ?? "",
+                                    tideTitle: self.title,
+                                    tideDescription: self.description,
+                                    maxParticipants: self.maxParticipants,
+                                    boundingBox: locationService.boundingBox!,
+                                    adult: user.adult
+                                )
+                            } else {
+                                result = .missingCredentials
+                            }
                         
                         var isError = true
                         switch result {

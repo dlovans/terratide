@@ -58,12 +58,15 @@ class UserRepository {
                     return
                 }
                 
+                let dateOfBirth = data["dateOfBirth"] as? Date ?? Date()
+                let year = Calendar.current.component(.year, from: dateOfBirth)
+                
                 let userObject = User(
                             id: document.documentID,
                             username: data["username"] as? String ?? "",
                             blockedUsers: data["blockedUsers"] as? [String: String] ?? [:],
                             blockedByUsers: data["blockedByUsers"] as? [String] ?? [],
-                            dateOfBirth: data["dateOfBirth"] as? Date ?? Date(),
+                            adult: year >= 18,
                             isBanned: data["isBanned"] as? Bool ?? false,
                             banReason: data["banReason"] as? String ?? "",
                             banLiftDate: data["banLiftDate"] as? Date ?? Date()
@@ -162,4 +165,48 @@ class UserRepository {
             return .failed
         }
     }
+    
+    /// Unblocks a user.
+    /// - Parameters:
+    ///   - userId: User ID of the user unblocking.
+    ///   - blockedUserId: User ID of the user who is blocked and attempting to unblock.
+    /// - Returns: Unblock attempt status.
+    func unblockUser(userId: String, blockedUserId: String) async -> UnblockStatus {
+        if userId.isEmpty || blockedUserId.isEmpty {
+            return .missingData
+        }
+        
+        do {
+            let unblockingUser = try await db.collection("users").document(userId).getDocument()
+            if !unblockingUser.exists {
+                print("Unblocking user document does not exist.")
+                return .unblockingUserNotFound
+            }
+            
+            let blockedUser = try await db.collection("users").document(blockedUserId).getDocument()
+            if !blockedUser.exists {
+                print("Blocked user document does not exist.")
+                return .blockedUserNotFound
+            }
+            
+            let blockedUsers = unblockingUser.data()?["blockedUsers"] as? [String: String] ?? [:]
+            let blockedByUsers = blockedUser.data()?["blockedByUsers"] as? [String] ?? []
+            
+            if !blockedUsers.keys.contains(blockedUserId) && !blockedByUsers.contains(userId) {
+                print("User is not blocked by the other user.")
+                return .alreadyUnblocked
+            }
+            
+            let batch = db.batch()
+            batch.updateData(["blockedUsers.\(blockedUserId)": FieldValue.delete()], forDocument: db.collection("users").document(userId))
+            batch.updateData(["blockedByUsers": FieldValue.arrayRemove([userId])], forDocument: db.collection("users").document(blockedUserId))
+            try await batch.commit()
+            
+            return .unblocked
+        } catch {
+            print("Failed to unblock user. Error: \(error)")
+            return .failed
+        }
+    }
+
 }

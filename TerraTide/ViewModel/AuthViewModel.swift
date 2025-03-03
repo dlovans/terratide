@@ -48,8 +48,15 @@ class AuthViewModel: ObservableObject {
             case .success(let authDataResult):
                 completion(.success(authDataResult))
             case .failure(let error):
-                print("Failed to register user with email and password!")
-                completion(.failure(error))
+                if let error = error as NSError? {
+                    if let authErrorCode = AuthErrorCode(rawValue: error.code) {
+                        completion(.failure(authErrorCode))
+                    } else {
+                        completion(.failure(error))
+                    }
+                } else {
+                    completion(.failure(error))
+                }
             }
             
         }

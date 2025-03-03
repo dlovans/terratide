@@ -59,9 +59,11 @@ struct AvailableTideListView: View {
         .frame(maxHeight: .infinity, alignment: .bottom)
         .onAppear {
             Task { @MainActor in
+                attemptingToJoinTide = false
                 if let userLocation = locationService.userLocation, let user = userViewModel.user {
                     tidesViewModel.attachAvailableTidesListener(
                         for: userLocation,
+                        adult: user.adult,
                         userId: user.id,
                         blockedUsers: user.blockedUsers,
                         blockedByUsers: user.blockedByUsers
@@ -74,6 +76,7 @@ struct AvailableTideListView: View {
                 if let userLocation = locationService.userLocation, let user = userViewModel.user {
                     tidesViewModel.attachAvailableTidesListener(
                         for: userLocation,
+                        adult: user.adult,
                         userId: user.id,
                         blockedUsers: user.blockedUsers,
                         blockedByUsers: user.blockedByUsers
@@ -86,6 +89,7 @@ struct AvailableTideListView: View {
                 if let userLocation = locationService.userLocation, let user = userViewModel.user {
                     tidesViewModel.attachAvailableTidesListener(
                         for: userLocation,
+                        adult: user.adult,
                         userId: user.id,
                         blockedUsers: user.blockedUsers,
                         blockedByUsers: user.blockedByUsers
@@ -200,9 +204,6 @@ struct TideItemView: View {
         .frame(maxWidth: .infinity, alignment: .topLeading)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .background(.white)
-        .onAppear {
-            attemptingToJoinTide = false
-        }
         .contextMenu {
             if userViewModel.user?.id != tide.creatorId {
                 Button {

@@ -94,51 +94,53 @@ struct ActiveTideItemView: View {
                 }
                 
                 HStack {
-                    Button {
-                        Task { @MainActor in
-                            openingOrLeavingTide = true
-                            let status  = await singleTideViewModel.leaveTide(tideId: tide.id ?? "", userId: userViewModel.user?.id ?? "")
-                            
-                            var isError: Bool = true
-                            
-                            switch status {
-                            case .left:
-                                print("Successfully left Tide.")
-                                isError = false
-                            case .invalidData:
-                                errorMessage = "Failed to leave :("
-                            case .noDocument:
-                                errorMessage = "Couldn't find Tide :("
-                            case .notMember:
-                                errorMessage = "You're not a member of this Tide"
-                            case .failed:
-                                errorMessage = "Failed to leave, something went wrong. :("
-                            }
-                
-                            if isError {
-                                displayErrorMessage = true
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                                    displayErrorMessage = false
+                    if userViewModel.user?.id != tide.creatorId {
+                        Button {
+                            Task { @MainActor in
+                                openingOrLeavingTide = true
+                                let status  = await singleTideViewModel.leaveTide(tideId: tide.id ?? "", userId: userViewModel.user?.id ?? "")
+                                
+                                var isError: Bool = true
+                                
+                                switch status {
+                                case .left:
+                                    print("Successfully left Tide.")
+                                    isError = false
+                                case .invalidData:
+                                    errorMessage = "Failed to leave :("
+                                case .noDocument:
+                                    errorMessage = "Couldn't find Tide :("
+                                case .notMember:
+                                    errorMessage = "You're not a member of this Tide"
+                                case .failed:
+                                    errorMessage = "Failed to leave, something went wrong. :("
                                 }
+                    
+                                if isError {
+                                    displayErrorMessage = true
+                                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
+                                        displayErrorMessage = false
+                                    }
+                                }
+                                
+                                openingOrLeavingTide = false
                             }
+                        } label: {
+                            HStack {
+                                Image(systemName: "arrow.backward")
+                                Text("Leave")
+                                
+                            }
+                            .frame(maxWidth: .infinity)
+                            .padding(10)
+                            .background(openingOrLeavingTide ? .gray : Color.red.opacity(0.7))
+                            .foregroundStyle(.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 5))
+                            .disabled(openingOrLeavingTide)
                             
-                            openingOrLeavingTide = false
                         }
-                    } label: {
-                        HStack {
-                            Image(systemName: "arrow.backward")
-                            Text("Leave")
-                            
-                        }
-                        .frame(maxWidth: .infinity)
-                        .padding(10)
-                        .background(openingOrLeavingTide ? .gray : Color.red.opacity(0.7))
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 5))
-                        .disabled(openingOrLeavingTide)
-                        
+                        .buttonStyle(TapEffectButtonStyle())
                     }
-                    .buttonStyle(TapEffectButtonStyle())
                     Button {
                         path.append(.tide(tide.id!))
                     } label: {

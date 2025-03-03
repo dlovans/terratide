@@ -16,8 +16,9 @@ class ChatRepository {
     ///   - boundingBox: Tuple representing a bounding box, calculated from a user's position.
     ///   - onUpdate: A closure that runs when fetching messages is completed.
     /// - Returns: Chat messages listener. Use to reset in ChatViewModel to avoid memory leaks.
-    func attachGeoChatListener(for userLocation: Coordinate, blockedByUsers: [String], blockedUsers: [String: String], onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
+    func attachGeoChatListener(for userLocation: Coordinate, adult: Bool, blockedByUsers: [String], blockedUsers: [String: String], onUpdate: @escaping ([Message]?) -> Void) -> ListenerRegistration? {
         let geoChatListener = db.collection("messages")
+            .whereField("adult", isEqualTo: adult)
             .whereField("longStart", isLessThanOrEqualTo: userLocation.longitude)
             .whereField("longEnd", isGreaterThanOrEqualTo: userLocation.longitude)
             .whereField("latStart", isLessThanOrEqualTo: userLocation.latitude)
@@ -69,7 +70,7 @@ class ChatRepository {
     ///   - userId: User ID of sender.
     ///   - boundingBox: Geospatial bounding box for this message.
     /// - Returns: Status of message operation.
-    func createGeoMessage(with text: String, by sender: String, with userId: String, boundingBox: BoundingBox?) async -> MessageStatus {
+    func createGeoMessage(with text: String, by sender: String, with userId: String, boundingBox: BoundingBox?, adult: Bool) async -> MessageStatus {
         if text.isEmpty {
             return .emptyMessage
         }
@@ -85,7 +86,8 @@ class ChatRepository {
                 "longStart": boundingBox.longStart,
                 "longEnd": boundingBox.longEnd,
                 "latStart": boundingBox.latStart,
-                "latEnd": boundingBox.latEnd
+                "latEnd": boundingBox.latEnd,
+                "adult": adult
             ])
             return .sent
         } catch {

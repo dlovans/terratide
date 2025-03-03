@@ -1,9 +1,8 @@
 <!--TODO: Write cloud function making Tide invisible after expiryDate-->
-<!--TODO: Write cloud function priming this Tide for deletion after deletionDate-->
-<!--TODO: Define method for unblocking users in UserRepository.-->
-<!--TODO: TODO: Display blocked users view in BlockedUsersView (from SettingsView).-->
+<!--TODO: Write cloud function priming Tide for deletion after deletionDate-->
 <!--TODO: // TODO: Implement in-app Forgot password for email.-->
-<!--TODO: Implement phone auth.
-// TODO: Implement Google auth.
-// TODO: Implement Apple auth.-->
-// TODO: Implement age groups.
+<!--TODO: Implement phone auth. POST LAUNCH
+// TODO: Implement Google auth. POST LAUNCH
+// TODO: Implement Apple auth. POST LAUNCH
+// TODO: Fix feedback sheet in SettingsView
+// TODO: Comment out auth options UI.

@@ -26,7 +26,8 @@ class SingleTideRepository {
         tideTitle: String,
         tideDescription: String,
         maxParticipants: Int,
-        boundingBox: BoundingBox
+        boundingBox: BoundingBox,
+        adult: Bool
     ) async -> TideCreationStatus {
         if byUserID.isEmpty || byUsername.isEmpty {
             return .missingCredentials
@@ -53,7 +54,8 @@ class SingleTideRepository {
                 "latEnd": boundingBox.latEnd,
                 "active": true,
                 "primedForDeletion": false,
-                "memberIds": [byUserID]
+                "memberIds": [byUserID],
+                "adult": adult
             ])
             
             if result.documentID.isEmpty {

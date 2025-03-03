@@ -90,4 +90,13 @@ class UserViewModel: ObservableObject {
     func blockUser(blocking againstUserId: String, againstUsername: String, by userId: String) async -> BlockStatus {
         return await  userRepository.blockUser(blocking: againstUserId, againstUsername: againstUsername, by: userId)
     }
+    
+    /// Calls `unblockUser` method in UserReposiory to unblock a user.
+    /// - Parameters:
+    ///   - userId: User ID of the user unblocking.
+    ///   - blockedUserId: User ID of the user who is blocked and attempting to unblock.
+    /// - Returns: Unblock attempt status.
+    func unblockUser(userId: String, blockedUserId: String) async -> UnblockStatus {
+        return await userRepository.unblockUser(userId: userId, blockedUserId: blockedUserId)
+    }
 }

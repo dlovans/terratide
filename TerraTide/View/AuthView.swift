@@ -28,10 +28,10 @@ struct AuthView: View {
                 }
             VStack (spacing: 30) {
                 PhoneEmailAuthView(authType: self.authType, fieldIsFocused: $fieldIsFocused, isEmailAuth: $isEmailAuth, errorMessage: $errorMessage, displayErrorMessage: $displayErrorMessage)
-                AlternativeAuthView(isEmailAuth: $isEmailAuth, authType: self.authType)
-                    .onTapGesture {
-                        fieldIsFocused = false
-                    }
+//                AlternativeAuthView(isEmailAuth: $isEmailAuth, authType: self.authType)
+//                    .onTapGesture {
+//                        fieldIsFocused = false
+//                    }
                 Spacer()
                 SwitchAuthView(authType: $authType)
                     .onTapGesture {
@@ -137,29 +137,29 @@ struct PhoneEmailAuthView: View {
                 }
             } else {
                 // Phone auth
-                VStack {
-                    Text("Phone")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    TextField("", text: $phoneNumber)
-                        .padding()
-                        .keyboardType(.phonePad)
-                        .focused(fieldIsFocused)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 10)
-                                .stroke(.orange, lineWidth: 1)
-                        }
-                        .overlay {
-                            if phoneNumber.isEmpty {
-                                Text("+46728652474")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 18)
-                                    .allowsHitTesting(false)
-                                    .foregroundStyle(.indigo)
-                                    .opacity(0.6)
-                                
-                            }
-                        }
-                }
+//                VStack {
+//                    Text("Phone")
+//                        .frame(maxWidth: .infinity, alignment: .leading)
+//                    TextField("", text: $phoneNumber)
+//                        .padding()
+//                        .keyboardType(.phonePad)
+//                        .focused(fieldIsFocused)
+//                        .overlay {
+//                            RoundedRectangle(cornerRadius: 10)
+//                                .stroke(.orange, lineWidth: 1)
+//                        }
+//                        .overlay {
+//                            if phoneNumber.isEmpty {
+//                                Text("+46728652474")
+//                                    .frame(maxWidth: .infinity, alignment: .leading)
+//                                    .padding(.horizontal, 18)
+//                                    .allowsHitTesting(false)
+//                                    .foregroundStyle(.indigo)
+//                                    .opacity(0.6)
+//                                
+//                            }
+//                        }
+//                }
             }
             
             Button {
@@ -170,6 +170,19 @@ struct PhoneEmailAuthView: View {
                         errorMessage = "Please enter a password."
                     }
                     
+                    withAnimation {
+                        displayErrorMessage = true
+                    }
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                        withAnimation {
+                            displayErrorMessage = false
+                        }
+                    }
+                    return
+                }
+                
+                if authType == .signup && password.count < 6 {
+                    errorMessage = "Password must be at least 6 characters long."
                     withAnimation {
                         displayErrorMessage = true
                     }
@@ -204,7 +217,7 @@ struct PhoneEmailAuthView: View {
                             if let authError = error as? AuthErrorCode {
                                 switch authError {
                                 case .accountExistsWithDifferentCredential:
-                                    errorMessage = "This email address is already in use. Try logging in with Google or Apple."
+                                    errorMessage = "This email address is already in use. Delete local app data and try again."
                                 case .userNotFound, .invalidCredential, .wrongPassword:
                                     errorMessage = "Invalid email or password."
                                 case .emailAlreadyInUse:
@@ -245,8 +258,30 @@ struct PhoneEmailAuthView: View {
                                     }                                    }
                             }
                         case .failure(let error):
-                            print("Error: \(error)")
-                        }
+                            if let authError = error as? AuthErrorCode {
+                                switch authError {
+                                case .accountExistsWithDifferentCredential:
+                                    errorMessage = "This email address is already in use. Delete local app data and try again."
+                                case .userNotFound, .invalidCredential, .wrongPassword:
+                                    errorMessage = "Invalid email or password."
+                                case .emailAlreadyInUse:
+                                    errorMessage = "You're already logged in. Delete local app data and try again."
+                                case .invalidEmail:
+                                    errorMessage = "Invalid email address. Check your spelling and try again."
+                                default:
+                                    errorMessage = "An error occurred while trying to log in. Try again later."
+                                }
+                            } else {
+                                errorMessage = "An error occurred while logging in. Try again later."
+                            }
+                            withAnimation {
+                                displayErrorMessage = true
+                            }
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                                withAnimation {
+                                    displayErrorMessage = false
+                                }
+                            }                        }
                     }
                 }
             } label: {
