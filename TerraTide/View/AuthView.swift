@@ -17,6 +17,9 @@ struct AuthView: View {
     @State private var isEmailAuth: Bool = true
     @State private var errorMessage = ""
     @State private var displayErrorMessage: Bool = false
+    @State private var displayTOSSheet: Bool = false
+    @State private var displayPPSheet: Bool = false
+    @State private var isAuthenticating: Bool = false
     
     var body: some View {
         ZStack {
@@ -27,7 +30,7 @@ struct AuthView: View {
                     fieldIsFocused = false
                 }
             VStack (spacing: 30) {
-                PhoneEmailAuthView(authType: self.authType, fieldIsFocused: $fieldIsFocused, isEmailAuth: $isEmailAuth, errorMessage: $errorMessage, displayErrorMessage: $displayErrorMessage)
+                PhoneEmailAuthView(authType: self.authType, fieldIsFocused: $fieldIsFocused, isEmailAuth: $isEmailAuth, errorMessage: $errorMessage, displayErrorMessage: $displayErrorMessage, displayTOSSheet: $displayTOSSheet, displayPPSheet: $displayPPSheet, isAuthenticating: $isAuthenticating)
 //                AlternativeAuthView(isEmailAuth: $isEmailAuth, authType: self.authType)
 //                    .onTapGesture {
 //                        fieldIsFocused = false
@@ -54,6 +57,12 @@ struct AuthView: View {
         .onTapGesture {
             fieldIsFocused = false
         }
+        .sheet(isPresented: $displayTOSSheet) {
+            TOSView()
+        }
+        .sheet(isPresented: $displayPPSheet) {
+            PrivacyPolicyView()
+        }
     }
 }
 
@@ -64,10 +73,14 @@ struct PhoneEmailAuthView: View {
     @State private var email: String = ""
     @State private var password: String = ""
     @State private var phoneNumber: String = ""
+    @State private var displayForgotPasswordSheet: Bool = false
     var fieldIsFocused: FocusState<Bool>.Binding
     @Binding var isEmailAuth: Bool
     @Binding var errorMessage: String
     @Binding var displayErrorMessage: Bool
+    @Binding var displayTOSSheet: Bool
+    @Binding var displayPPSheet: Bool
+    @Binding var isAuthenticating: Bool
     
     var body: some View {
         VStack (spacing: 10) {
@@ -162,7 +175,19 @@ struct PhoneEmailAuthView: View {
 //                }
             }
             
+            if authType == .login {
+                Button {
+                    displayForgotPasswordSheet = true
+                } label: {
+                    Text("Forgot password?")
+                        .frame(maxWidth: .infinity, alignment: .trailing)
+                        .foregroundStyle(.black.opacity(0.6))
+                        .padding(.vertical)
+                }
+            }
+            
             Button {
+                isAuthenticating = true
                 if email.isEmpty || password.isEmpty {
                     if email.isEmpty {
                         errorMessage = "Please enter an email address."
@@ -178,6 +203,7 @@ struct PhoneEmailAuthView: View {
                             displayErrorMessage = false
                         }
                     }
+                    isAuthenticating = false
                     return
                 }
                 
@@ -191,6 +217,7 @@ struct PhoneEmailAuthView: View {
                             displayErrorMessage = false
                         }
                     }
+                    isAuthenticating = false
                     return
                 }
                 
@@ -214,6 +241,7 @@ struct PhoneEmailAuthView: View {
                                 }
                             }
                         case .failure(let error):
+                            isAuthenticating = false
                             if let authError = error as? AuthErrorCode {
                                 switch authError {
                                 case .accountExistsWithDifferentCredential:
@@ -258,6 +286,7 @@ struct PhoneEmailAuthView: View {
                                     }                                    }
                             }
                         case .failure(let error):
+                            isAuthenticating = false
                             if let authError = error as? AuthErrorCode {
                                 switch authError {
                                 case .accountExistsWithDifferentCredential:
@@ -281,20 +310,47 @@ struct PhoneEmailAuthView: View {
                                 withAnimation {
                                     displayErrorMessage = false
                                 }
-                            }                        }
+                            }
+                        }
                     }
                 }
             } label: {
                 Text(isEmailAuth ? authType == .login ? "Login" : "Join" : "Send code")
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.orange)
+                    .background(isAuthenticating ? .gray : Color.orange)
                     .opacity(0.9)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                     .foregroundStyle(.white)
             }
+            .disabled(isAuthenticating)
             .buttonStyle(TapEffectButtonStyle())
             .accessibilityHint(Text("Click to \(authType == .login ? "login" : "join")."))
+            
+            if authType == .signup {
+                VStack {
+                    Text("By Joining you agree to our")
+                    HStack {
+                        Button {
+                            displayTOSSheet = true
+                        } label: {
+                            Text("Terms of Service")
+                        }
+                        .disabled(isAuthenticating)
+                        Text("and")
+                        Button {
+                            displayPPSheet = true
+                        } label: {
+                            Text("Privacy Policy")
+                        }
+                        .disabled(isAuthenticating)
+                    }
+                }
+                .font(.footnote)
+            }
+        }
+        .sheet(isPresented: $displayForgotPasswordSheet) {
+            ForgotPasswordView()
         }
     }
 }

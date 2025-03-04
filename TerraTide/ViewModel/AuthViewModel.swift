@@ -62,6 +62,16 @@ class AuthViewModel: ObservableObject {
         }
     }
     
+    /// Sends a password reset link.
+    /// - Parameters:
+    ///   - email: Email of the user.
+    ///   - completion: A closure that runs after finishing attempt to send password reset link.
+    func sendPasswordResetLink(to email: String, completion: @escaping (Bool) -> Void) {
+        authRepository.sendPasswordResetLink(email: email) { status in
+            completion(status)
+        }
+    }
+    
     /// Sign in users with email and password.
     /// - Parameters:
     ///   - email: User-provided email

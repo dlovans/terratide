@@ -8,6 +8,7 @@
 import Foundation
 
 enum ReportCategory: String, CaseIterable {
+    case datingSexual = "Dating/Sexual"
     case inappropriateContent = "Inappropriate Content"
     case spam = "Spam"
     case misinformation = "Misinformation"

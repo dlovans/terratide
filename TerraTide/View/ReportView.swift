@@ -17,7 +17,7 @@ struct ReportView: View {
     var reportAgainstUserId: String
     @Binding var showReportSheet: Bool
     
-    @State private var reportCategory: ReportCategory = .spam
+    @State private var reportCategory: ReportCategory = .datingSexual
     @State private var reportContent: String = ""
     @State private var overlayReportText = ""
     @State private var reportIsValid: Bool = false

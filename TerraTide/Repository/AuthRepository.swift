@@ -49,6 +49,21 @@ class AuthRepository {
         }
     }
     
+    /// Sends a password reset link.
+    /// - Parameters:
+    ///   - email: Email of the user.
+    ///   - completion: A closure that runs after finishing attempt to send password reset link.
+    func sendPasswordResetLink(email: String, completion: @escaping (Bool) -> Void) {
+        Auth.auth().sendPasswordReset(withEmail: email) { error in
+            if let error = error {
+                print("Error sending password reset link: \(error.localizedDescription)")
+                completion(false)
+            } else {
+                completion(true)
+            }
+        }
+    }
+    
     /// Signs in user with email and password.
     /// - Parameters:
     ///   - email: User-provided email
