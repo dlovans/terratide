@@ -72,7 +72,7 @@ struct PrivacyPolicyView: View {
                 - Request that we correct or update your personal information.
                 - Request the deactivation of your account. Please note that we do not offer the ability to delete content once it is posted within the app.
 
-                If you have any questions or concerns about your personal data or this Privacy Policy, please contact us at [your email address].
+                If you have any questions or concerns about your personal data or this Privacy Policy, please contact us at app@terratide.app.
                 """)
             }
             .padding()

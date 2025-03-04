@@ -81,7 +81,7 @@ struct FeedbackView: View {
                                 feedbackButtonText = "Feedback Sent!"
                             } else {
                                 feedbackButtonText = "Try again"
-                                errorMessage = "Failed to send feedback. Send me an email instead at dlovan@terratide.app, or try again later!"
+                                errorMessage = "Failed to send feedback. Send me an email instead at app@terratide.app, or try again later!"
                                 displayErrorMessage = true
                                 
                                 DispatchQueue.main.asyncAfter(deadline: .now() + 5) {

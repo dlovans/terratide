@@ -45,7 +45,7 @@ struct TOSView: View {
                 Terratide reserves the right to update or modify these Terms of Service at any time. You will be notified of any significant changes.
 
                 10. **Contact Us**
-                If you have any questions regarding these Terms of Service, please contact us at [your email address].
+                If you have any questions regarding these Terms of Service, please contact us at app@terratide.app.
                 """)
                     .font(.body)
                     .padding(.horizontal)

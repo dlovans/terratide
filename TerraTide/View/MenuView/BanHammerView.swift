@@ -9,7 +9,7 @@ import SwiftUI
 
 struct BanHammerView: View {
     private var userId: String = "12345677777777777"
-    private var email: String = "dlovan@terratide.app"
+    private var email: String = "app@terratide.app"
     @State private var displayUserIdToast = false
     @State private var displayEmailToast = false
     @State private var userIdWorkItem: DispatchWorkItem?
