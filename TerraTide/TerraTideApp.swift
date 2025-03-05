@@ -30,6 +30,7 @@ struct TerraTideApp: App {
                 .environmentObject(singleTideViewModel)
                 .environmentObject(tidesViewModel)
                 .environmentObject(reportViewModel)
+                .preferredColorScheme(.light)
         }
     }
 }
