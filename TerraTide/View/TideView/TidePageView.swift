@@ -106,7 +106,7 @@ struct TideDetailsView: View {
                     HStack {
                         Text("Creator:")
                         Spacer()
-                        Text("Dlovan")
+                        Text(singleTideViewModel.tide?.creatorUsername ?? "")
                     }
                     .frame(maxWidth: .infinity)
                     

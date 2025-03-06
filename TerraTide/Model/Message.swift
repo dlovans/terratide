@@ -14,5 +14,5 @@ struct Message: Identifiable, Codable {
     let byUserId: String
     let sender: String
     let timestamp: Date
-    let adult: Bool
+    let adult: Bool?
 }

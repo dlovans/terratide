@@ -18,10 +18,10 @@ struct TOSView: View {
 
                 Text("""
                 1. **Introduction**
-                Welcome to Terratide! By using this app, you agree to comply with and be bound by the following terms and conditions. Please read them carefully.
+                Welcome to TerraTide! By using this app, you agree to comply with and be bound by the following terms and conditions. Please read them carefully.
 
                 2. **Purpose of the App**
-                The Terratide app facilitates real-world meetings between anonymous people based on geolocation. It is not for dating, hookups, or any sexual activities. The app connects people nearby through 'tides' to plan activities in a private chat.
+                The TerraTide app facilitates real-world meetings between anonymous people based on geolocation. It is not for dating, hookups, or any sexual activities. The app connects people nearby through 'Tides' to plan activities in a private chat.
 
                 3. **Registration and Age Requirements**
                 Users must be registered to use the app. Upon registration, you will be asked to provide your age. Users are divided into adults and non-adults. Adult-only content (+18) will be visible only to adults, while non-adult content will be shown to non-adults.
@@ -42,7 +42,7 @@ struct TOSView: View {
                 If you violate the Terms of Service, the app may impose a temporary ban depending on the severity of the transgression. In case of serious violations, a permanent ban will be imposed.
 
                 9. **Changes to the Terms**
-                Terratide reserves the right to update or modify these Terms of Service at any time. You will be notified of any significant changes.
+                TerraTide reserves the right to update or modify these Terms of Service at any time. You will be notified of any significant changes.
 
                 10. **Contact Us**
                 If you have any questions regarding these Terms of Service, please contact us at app@terratide.app.

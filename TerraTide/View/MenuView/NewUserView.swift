@@ -48,7 +48,6 @@ struct NewUserView: View {
                     .animation(.easeInOut, value: usernameIsValid)
             }
             .onChange(of: username) { oldValue, newValue in
-//                withAnimation {
                     if newValue.isEmpty {
                         usernameIsValid = false
                         usernameFeedback = "Username cannot be empty."
@@ -120,6 +119,7 @@ struct NewUserView: View {
                 .animation(.easeInOut, value: usernameIsValid)
             }
             .buttonStyle(TapEffectButtonStyle())
+            .disabled(!usernameIsValid)
         }
         .padding()
     }
