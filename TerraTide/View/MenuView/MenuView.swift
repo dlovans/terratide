@@ -82,6 +82,9 @@ struct MenuView: View {
                         } else if routeName == "blockedUsers" {
                             BlockedUsersView(path: $path)
                                 .navigationBarBackButtonHidden()
+                        } else if routeName == "deleteAccount" {
+                            DeleteAccountConfirmationView(path: $path)
+                                .navigationBarBackButtonHidden()
                         }
                     case let .tide(tideId):
                         TidePageView(path: $path, tideId: tideId)

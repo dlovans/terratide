@@ -216,7 +216,7 @@ struct CreateTideView: View {
                     }
                     
                 } label: {
-                    Text("Three is a company")
+                    Text("Create")
                         .foregroundStyle(.white)
                         .padding()
                         .frame(maxWidth: .infinity)

@@ -229,4 +229,28 @@ class UserRepository {
             return false
         }
     }
+    
+    /// Deletes user data and deletion.
+    /// - Parameter userId: User ID of the user requesting account deletion.
+    /// - Returns: If deletion was successful or not.
+    func deleteAccount(userId: String) async -> Bool {
+        do {
+            // Firestore deletion task with the explicit type of Void
+            async let deleteUserFromFirestore: Void = db.collection("users").document(userId).delete()
+            
+            // Auth deletion task with the explicit type of Void
+            async let deleteUserFromAuth: Void = Auth.auth().currentUser!.delete()
+            
+            // Await both tasks concurrently
+            _ = try await (deleteUserFromFirestore, deleteUserFromAuth)
+            
+            return true
+        } catch {
+            // Handle any error that occurs during the deletion process
+            print("Failed to delete account: \(error)")
+            return false
+        }
+    }
+
+
 }

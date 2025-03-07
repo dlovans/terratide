@@ -17,6 +17,7 @@ struct SettingsView: View {
     @State private var displayErrorMessage: Bool = false
     @State private var errorMessage: String = ""
     @State private var errorWorkItem: DispatchWorkItem?
+    @State private var disableButtons: Bool = false
     
     var body: some View {
         ZStack {
@@ -32,9 +33,11 @@ struct SettingsView: View {
                     .foregroundStyle(.black)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(.green.opacity(0.6))
+                    .background(disableButtons ? .gray : .green.opacity(0.6))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
+                .buttonStyle(TapEffectButtonStyle())
+                .disabled(disableButtons)
                 
                 Button {
                     path.append(.general("blockedUsers"))
@@ -46,15 +49,19 @@ struct SettingsView: View {
                     .foregroundStyle(.black)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(.red.opacity(0.4))
+                    .background(disableButtons ? .gray : .red.opacity(0.4))
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
+                .buttonStyle(TapEffectButtonStyle())
+                .disabled(disableButtons)
                 
                 Button {
+                    disableButtons = true
                     if authViewModel.signOut() == .logoutFailure {
                         errorWorkItem?.cancel()
                         errorMessage = "Failed to logout. Restart app or try again later."
                         displayErrorMessage = true
+                        disableButtons = false
                         
                         errorWorkItem = DispatchWorkItem {
                             withAnimation {
@@ -75,12 +82,17 @@ struct SettingsView: View {
                     .foregroundStyle(.black)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(.red)
+                    .background(disableButtons ? .gray : .red)
                     .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
+                .buttonStyle(TapEffectButtonStyle())
+                .disabled(disableButtons)
+                
+                Spacer()
+                
+                DeleteAccountView(path: $path)
                 
             }
-            .buttonStyle(TapEffectButtonStyle())
             .frame(maxHeight: .infinity, alignment: .top)
             .padding(.top, 10)
             

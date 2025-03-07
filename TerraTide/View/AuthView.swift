@@ -99,6 +99,7 @@ struct PhoneEmailAuthView: View {
                 .background(.black)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
                 .offset(x: displayErrorMessage ? 0 : -500)
+                .opacity(displayErrorMessage ? 1 : 0)
             
             if isEmailAuth {
                 VStack {

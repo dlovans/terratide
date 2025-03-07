@@ -109,4 +109,8 @@ class UserViewModel: ObservableObject {
     func createFeedback(respondentEmail: String = "", feedbackText: String, byUserId: String) async -> Bool {
         return await userRepository.createFeedback(respondentEmail: respondentEmail, feedbackText: feedbackText, byUserId: byUserId)
     }
+    
+    func deleteAccount(userId: String) async -> Bool {
+        return await userRepository.deleteAccount(userId: userId)
+    }
 }
