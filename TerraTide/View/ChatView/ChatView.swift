@@ -81,13 +81,13 @@ struct ChatView: View {
         }
         .onChange(of: locationService.userLocation) { _, newValue in
             if let userLocation = locationService.userLocation, let user = userViewModel.user {
-                Task { @MainActor in
+                Task (priority: .background) {
                     chatViewModel.attachGeoChatListener(userLocation: userLocation, adult: user.adult, blockedByUsers: user.blockedByUsers, blockedUsers: user.blockedUsers)
                 }
             }
         }
         .onDisappear {
-            Task { @MainActor in
+            Task (priority: .background) {
                 chatViewModel.removeGeoChatListener()
                 print("Geo chat listener destroyed")
                 
@@ -225,11 +225,14 @@ struct ChatFieldView: View {
                     messageWorkItem?.cancel()
                     displayActionFeedbackMessage = false
                     isSendingMessage = true
+
                     
                     if !messageContent.isEmpty {
                         if let user = userViewModel.user, let boundingBox = locationService.boundingBox {
+                            let tempMsg = messageContent
+                            messageContent = ""
                             let status = await chatViewModel.createGeoMessage(
-                                text: self.messageContent.trimmingCharacters(in: .whitespacesAndNewlines),
+                                text: tempMsg.trimmingCharacters(in: .whitespacesAndNewlines),
                                 sender: user.username,
                                 userId: user.id,
                                 boundingBox: boundingBox,
@@ -241,7 +244,6 @@ struct ChatFieldView: View {
                             switch status {
                             case .sent:
                                 isError = false
-                                messageContent = ""
                             case .emptyMessage:
                                 actionFeedbackMessage = "Message can't be empty."
                             case .failedToCreate:
@@ -254,6 +256,7 @@ struct ChatFieldView: View {
                             }
                             
                             if isError {
+                                messageContent = tempMsg
                                 displayActionFeedbackMessage = true
                                 
                                 messageWorkItem = DispatchWorkItem {

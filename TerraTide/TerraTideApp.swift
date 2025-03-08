@@ -15,10 +15,6 @@ struct TerraTideApp: App {
     @StateObject private var authViewModel = AuthViewModel()
     @StateObject private var userViewModel = UserViewModel()
     @StateObject private var locationService = LocationService()
-    @StateObject private var chatViewModel = ChatViewModel()
-    @StateObject private var singleTideViewModel = SingleTideViewModel()
-    @StateObject private var tidesViewModel = TidesViewModel()
-    @StateObject private var reportViewModel = ReportViewModel()
 
     var body: some Scene {
         WindowGroup {
@@ -26,11 +22,12 @@ struct TerraTideApp: App {
                 .environmentObject(authViewModel)
                 .environmentObject(userViewModel)
                 .environmentObject(locationService)
-                .environmentObject(chatViewModel)
-                .environmentObject(singleTideViewModel)
-                .environmentObject(tidesViewModel)
-                .environmentObject(reportViewModel)
                 .preferredColorScheme(.light)
+                .onAppear {
+#if DEBUG
+                    UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable")
+#endif
+                }
         }
     }
 }

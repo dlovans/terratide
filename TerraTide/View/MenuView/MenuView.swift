@@ -9,6 +9,11 @@ import SwiftUI
 
 struct MenuView: View {
     let tideId: String = "123"
+    @StateObject private var chatViewModel = ChatViewModel()
+    @StateObject private var tidesViewModel = TidesViewModel()
+    @StateObject private var singleTideViewModel = SingleTideViewModel()
+    @StateObject private var reportViewModel = ReportViewModel()
+    
     @EnvironmentObject var locationService: LocationService
     @State private var path: [Route] = []
     @State private var position = ScrollPosition(edge: .leading)
@@ -24,6 +29,9 @@ struct MenuView: View {
                 TabView(selection: $currentPage) {
                     Tab(value: 0) {
                         ActiveTideListView(path: $path)
+                            .environmentObject(tidesViewModel)
+                            .environmentObject(reportViewModel)
+                            .environmentObject(singleTideViewModel)
                             .onAppear {
                                 if currentPage == 0 && isTransitioning {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -34,6 +42,9 @@ struct MenuView: View {
                     }
                     Tab(value: 1) {
                         AvailableTideListView(path: $path)
+                            .environmentObject(tidesViewModel)
+                            .environmentObject(reportViewModel)
+                            .environmentObject(singleTideViewModel)
                             .onAppear {
                                 if currentPage == 1 && isTransitioning {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -45,6 +56,8 @@ struct MenuView: View {
                     
                     Tab(value: 2) {
                         ChatView(chatFieldIsFocused: $chatFieldIsFocused)
+                            .environmentObject(chatViewModel)
+                            .environmentObject(reportViewModel)
                             .onAppear {
                                 if currentPage == 2 && isTransitioning {
                                     DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
@@ -104,11 +117,6 @@ struct MenuView: View {
                     .background(.white)
                     .opacity(isTransitioning ? 0.4 : 0)
                     .allowsHitTesting(isTransitioning)
-            }
-        }
-        .onAppear {
-            Task { @MainActor in
-                locationService.startPeriodicLocationTask()
             }
         }
     }

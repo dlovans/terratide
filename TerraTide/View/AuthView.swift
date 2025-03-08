@@ -12,6 +12,8 @@ struct AuthView: View {
     @EnvironmentObject private var chatViewModel: ChatViewModel
     @EnvironmentObject private var tidesViewModel: TidesViewModel
     @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
+    @EnvironmentObject private var locationService: LocationService
+    
     @State private var authType: AuthType = .login
     @FocusState private var fieldIsFocused: Bool
     @State private var isEmailAuth: Bool = true
@@ -47,13 +49,6 @@ struct AuthView: View {
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
-        .onAppear {
-            chatViewModel.removeGeoChatListener()
-            chatViewModel.removeTideChatListener()
-            tidesViewModel.removeActiveTidesListener()
-            tidesViewModel.removeAvailableTidesListener()
-            singleTideViewModel.removeTideListener()
-        }
         .onTapGesture {
             fieldIsFocused = false
         }

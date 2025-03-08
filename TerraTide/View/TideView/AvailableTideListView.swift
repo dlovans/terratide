@@ -98,8 +98,9 @@ struct AvailableTideListView: View {
             }
         }
         .onDisappear {
-            Task { @MainActor in
+            Task (priority: .background) {
                 tidesViewModel.removeAvailableTidesListener()
+                print("Available tides listener destroyed.")
             }
         }
     }

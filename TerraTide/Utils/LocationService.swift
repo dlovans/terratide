@@ -22,7 +22,6 @@ class LocationService: NSObject, CLLocationManagerDelegate, ObservableObject {
         manager.delegate = self
         self.locationAuthorized = manager.authorizationStatus
         manager.desiredAccuracy = kCLLocationAccuracyHundredMeters
-        manager.requestLocation()
     }
     
     
@@ -34,6 +33,12 @@ class LocationService: NSObject, CLLocationManagerDelegate, ObservableObject {
         queryTimer = Timer.scheduledTimer(withTimeInterval: 90, repeats: true) { [weak self] _ in
             self?.manager.requestLocation()
         }
+    }
+    
+    func stopPeriodicLocationTask() {
+        queryTimer?.invalidate()
+        queryTimer = nil
+        locationServicesLoaded = false
     }
     
     /// Calculates a bounding box that is 20 square kms using user's position.

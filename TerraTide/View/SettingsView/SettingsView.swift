@@ -57,6 +57,7 @@ struct SettingsView: View {
                 
                 Button {
                     disableButtons = true
+                    
                     if authViewModel.signOut() == .logoutFailure {
                         errorWorkItem?.cancel()
                         errorMessage = "Failed to logout. Restart app or try again later."

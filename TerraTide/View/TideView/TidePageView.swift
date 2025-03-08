@@ -85,9 +85,11 @@ struct TidePageView: View {
             }
         }
         .onDisappear {
-            Task { @MainActor in
+            Task (priority: .background) {
                 chatViewModel.removeTideChatListener()
                 singleTideViewModel.removeTideListener()
+                
+                print("Tide and tide-chat listeners destroyed.")
             }
         }
     }
@@ -418,9 +420,12 @@ struct TideChatFieldView: View {
                     displayActionFeedbackMessage = false
                     isSendingMessage = true
                     
+                    let tempMsg = self.messageContent
+                    self.messageContent = ""
+                    
                     let status = await chatViewModel.createTideMessage(
                         tideId: singleTideViewModel.tide?.id ?? "",
-                        text: messageContent.trimmingCharacters(in: .whitespacesAndNewlines),
+                        text: tempMsg.trimmingCharacters(in: .whitespacesAndNewlines),
                         sender: userViewModel.user?.username ?? "",
                         userId: userViewModel.user?.id ?? ""
                     )
@@ -436,13 +441,13 @@ struct TideChatFieldView: View {
                         actionFeedbackMessage = "Something went wrong while creating the message."
                     case .sent:
                         isError = false
-                        messageContent = ""
                     default:
                         print("Unknown error occurred.")
                         actionFeedbackMessage = "Unknown error occurred!"
                     }
                     
                     if isError {
+                        self.messageContent = tempMsg
                         displayActionFeedbackMessage = true
                         
                         messageWorkItem = DispatchWorkItem {
