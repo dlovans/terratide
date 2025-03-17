@@ -14,6 +14,7 @@ class SingleTideViewModel: ObservableObject {
     @Published var tideChatHasLoaded: Bool = false
     @Published var tide: Tide? = nil
     @Published var tideListener: ListenerRegistration? = nil
+    @Published var lastJoinedTideId: String? = nil
     
     private var listener: ListenerRegistration? = nil
     
