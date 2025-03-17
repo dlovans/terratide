@@ -15,6 +15,8 @@ struct TerraTideApp: App {
     @StateObject private var authViewModel = AuthViewModel()
     @StateObject private var userViewModel = UserViewModel()
     @StateObject private var locationService = LocationService()
+    @StateObject private var singleTideViewModel = SingleTideViewModel()
+    @StateObject private var tidesViewModel = TidesViewModel()
 
     var body: some Scene {
         WindowGroup {
@@ -22,7 +24,8 @@ struct TerraTideApp: App {
                 .environmentObject(authViewModel)
                 .environmentObject(userViewModel)
                 .environmentObject(locationService)
-                .preferredColorScheme(.light)
+                .environmentObject(singleTideViewModel)
+                .environmentObject(tidesViewModel)
                 .onAppear {
 #if DEBUG
                     UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable")
