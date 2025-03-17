@@ -7,8 +7,10 @@
 
 import SwiftUI
 import FirebaseAuth
+import Inject
 
 struct AuthView: View {
+    @ObserveInjection var inject: InjectConfiguration.Type       
     @EnvironmentObject private var chatViewModel: ChatViewModel
     @EnvironmentObject private var tidesViewModel: TidesViewModel
     @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
@@ -16,48 +18,149 @@ struct AuthView: View {
     
     @State private var authType: AuthType = .login
     @FocusState private var fieldIsFocused: Bool
-    @State private var isEmailAuth: Bool = true
     @State private var errorMessage = ""
     @State private var displayErrorMessage: Bool = false
     @State private var displayTOSSheet: Bool = false
     @State private var displayPPSheet: Bool = false
     @State private var isAuthenticating: Bool = false
+    @State private var keyboardHeight: CGFloat = 0
     
     var body: some View {
-        ZStack {
-            Color.clear
-                .background(LinearGradient(colors: [.orange, .indigo], startPoint: .topLeading, endPoint: .bottomTrailing))
+        GeometryReader { geometry in
+            ZStack {
+                // Modern gradient background
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.95, green: 0.4, blue: 0.4), // Warm red
+                        Color(red: 0.95, green: 0.6, blue: 0.3)  // Warm orange
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
                 .ignoresSafeArea()
+                
+                // Fun pattern overlay
+                ZStack {
+                    ForEach(0..<20) { i in
+                        Circle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: CGFloat.random(in: 50...150))
+                            .position(
+                                x: CGFloat.random(in: 0...geometry.size.width),
+                                y: CGFloat.random(in: 0...geometry.size.height)
+                            )
+                    }
+                }
+                .ignoresSafeArea()
+                
+                // Content
+                ScrollView(showsIndicators: false) {
+                    VStack(spacing: 30) {
+                        // Logo/App name
+                        VStack(spacing: 12) {
+                            Image(systemName: "person.3.fill")
+                                .resizable()
+                                .scaledToFit()
+                                .frame(width: 80, height: 60)
+                                .foregroundColor(.white)
+                            
+                            Text("TerraTide")
+                                .font(.system(size: 42, weight: .bold, design: .rounded))
+                                .foregroundColor(.white)
+                            
+                            VStack(spacing: 4) {
+                                Text("Spontaneous meetups,")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                                
+                                Text("real connections")
+                                    .font(.headline)
+                                    .foregroundColor(.white)
+                            }
+                        }
+                        .padding(.top, geometry.size.height * 0.08)
+                        .padding(.bottom, 30)
+                        // Hide logo when keyboard is shown
+                        .opacity(keyboardHeight > 0 ? 0 : 1)
+                        .frame(height: keyboardHeight > 0 ? 0 : nil)
+                        
+                        // Auth card
+                        VStack(spacing: 20) {
+                            // Error message
+                            if !errorMessage.isEmpty && displayErrorMessage {
+                                Text(errorMessage)
+                                    .font(.footnote)
+                                    .multilineTextAlignment(.center)
+                                    .padding()
+                                    .frame(maxWidth: .infinity)
+                                    .background(Color.red.opacity(0.1))
+                                    .foregroundColor(.red)
+                                    .cornerRadius(10)
+                            }
+                            
+                            PhoneEmailAuthView(
+                                authType: self.authType,
+                                fieldIsFocused: $fieldIsFocused,
+                                errorMessage: $errorMessage,
+                                displayErrorMessage: $displayErrorMessage,
+                                displayTOSSheet: $displayTOSSheet,
+                                displayPPSheet: $displayPPSheet,
+                                isAuthenticating: $isAuthenticating
+                            )
+                            
+                            Divider()
+                                .padding(.vertical, 10)
+                            
+                            SwitchAuthView(authType: $authType)
+                        }
+                        .padding(25)
+                        .background(Color(UIColor.systemBackground))
+                        .cornerRadius(20)
+                        .shadow(color: Color.black.opacity(0.15), radius: 15, x: 0, y: 8)
+                        .padding(.horizontal)
+                        
+                        // Add bottom spacing to ensure content doesn't overflow into safe area
+                        Spacer()
+                            .frame(height: 30)
+                    }
+                    .padding(.bottom, keyboardHeight > 0 ? keyboardHeight : max(geometry.safeAreaInsets.bottom + 20, 30))
+                }
+                .animation(.easeOut(duration: 0.25), value: keyboardHeight)
                 .onTapGesture {
                     fieldIsFocused = false
                 }
-            VStack (spacing: 30) {
-                PhoneEmailAuthView(authType: self.authType, fieldIsFocused: $fieldIsFocused, isEmailAuth: $isEmailAuth, errorMessage: $errorMessage, displayErrorMessage: $displayErrorMessage, displayTOSSheet: $displayTOSSheet, displayPPSheet: $displayPPSheet, isAuthenticating: $isAuthenticating)
-//                AlternativeAuthView(isEmailAuth: $isEmailAuth, authType: self.authType)
-//                    .onTapGesture {
-//                        fieldIsFocused = false
-//                    }
-                Spacer()
-                SwitchAuthView(authType: $authType)
-                    .onTapGesture {
-                        fieldIsFocused = false
-                    }
-            }
-            .padding()
-            .onTapGesture {
-                fieldIsFocused = false
             }
         }
-        .frame(maxHeight: .infinity, alignment: .top)
-        .onTapGesture {
-            fieldIsFocused = false
-        }
+        .edgesIgnoringSafeArea(.top) // Only ignore top safe area, respect bottom
         .sheet(isPresented: $displayTOSSheet) {
             TOSView()
         }
         .sheet(isPresented: $displayPPSheet) {
             PrivacyPolicyView()
         }
+        .onAppear {
+            // Clear any stale auth state on app launch
+            if UserDefaults.standard.bool(forKey: "isReinstall") {
+                try? Auth.auth().signOut()
+                UserDefaults.standard.set(false, forKey: "isReinstall")
+            }
+            
+            // Add keyboard observers
+            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillShowNotification, object: nil, queue: .main) { notification in
+                let keyboardFrame = notification.userInfo?[UIResponder.keyboardFrameEndUserInfoKey] as? CGRect ?? .zero
+                keyboardHeight = keyboardFrame.height
+            }
+            
+            NotificationCenter.default.addObserver(forName: UIResponder.keyboardWillHideNotification, object: nil, queue: .main) { _ in
+                keyboardHeight = 0
+            }
+        }
+        .onDisappear {
+            // Remove keyboard observers
+            NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
+            NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
+        }
+        .enableInjection()
     }
 }
 
@@ -67,10 +170,8 @@ struct PhoneEmailAuthView: View {
     @EnvironmentObject var userViewModel: UserViewModel
     @State private var email: String = ""
     @State private var password: String = ""
-    @State private var phoneNumber: String = ""
     @State private var displayForgotPasswordSheet: Bool = false
     var fieldIsFocused: FocusState<Bool>.Binding
-    @Binding var isEmailAuth: Bool
     @Binding var errorMessage: String
     @Binding var displayErrorMessage: Bool
     @Binding var displayTOSSheet: Bool
@@ -78,97 +179,49 @@ struct PhoneEmailAuthView: View {
     @Binding var isAuthenticating: Bool
     
     var body: some View {
-        VStack (spacing: 10) {
-            Text(authType == .login ? "Login to TerraTide" : "Join TerraTide")
-                .foregroundStyle(.black)
+        VStack(spacing: 20) {
+            Text(authType == .login ? "Welcome Back" : "Create Account")
+                .font(.title2)
+                .fontWeight(.bold)
                 .frame(maxWidth: .infinity, alignment: .leading)
-                .font(.title3)
             
-            Text(errorMessage)
-                .font(.caption)
-                .fixedSize(horizontal: false, vertical: true)
-                .frame(maxWidth: .infinity)
-                .frame(minHeight: 30)
-                .foregroundStyle(.white)
-                .padding(10)
-                .background(.black)
-                .clipShape(RoundedRectangle(cornerRadius: 10))
-                .offset(x: displayErrorMessage ? 0 : -500)
-                .opacity(displayErrorMessage ? 1 : 0)
-            
-            if isEmailAuth {
-                VStack {
-                    Text("Email")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    TextField("", text: $email)
-                        .accessibilityHint(Text("Enter your email address."))
-                        .keyboardType(.emailAddress)
-                        .padding()
-                        .focused(fieldIsFocused)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(.orange, lineWidth: 1)
-                        }
-                        .overlay {
-                            if email.isEmpty {
-                                Text("email@example.com")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 18)
-                                    .allowsHitTesting(false)
-                                    .tint(.indigo)
-                                    .opacity(0.6)
-                            }
-                        }
-                }
+            // Email field
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Email")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
                 
-                VStack {
-                    Text("Password")
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                    SecureField("", text: $password)
-                        .accessibilityHint(Text("Enter your password."))
-                        .keyboardType(.default)
-                        .padding()
+                HStack {
+                    Image(systemName: "envelope")
+                        .foregroundColor(.secondary)
+                    
+                    TextField("email@example.com", text: $email)
+                        .keyboardType(.emailAddress)
+                        .autocapitalization(.none)
+                        .autocorrectionDisabled()
                         .focused(fieldIsFocused)
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 8)
-                                .stroke(.orange, lineWidth: 1)
-                        }
-                        .overlay {
-                            if password.isEmpty {
-                                Text("Password")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                    .padding(.horizontal, 18)
-                                    .allowsHitTesting(false)
-                                    .foregroundStyle(.indigo)
-                                    .opacity(0.6)
-                            }
-                        }
                 }
-            } else {
-                // Phone auth
-//                VStack {
-//                    Text("Phone")
-//                        .frame(maxWidth: .infinity, alignment: .leading)
-//                    TextField("", text: $phoneNumber)
-//                        .padding()
-//                        .keyboardType(.phonePad)
-//                        .focused(fieldIsFocused)
-//                        .overlay {
-//                            RoundedRectangle(cornerRadius: 10)
-//                                .stroke(.orange, lineWidth: 1)
-//                        }
-//                        .overlay {
-//                            if phoneNumber.isEmpty {
-//                                Text("+46728652474")
-//                                    .frame(maxWidth: .infinity, alignment: .leading)
-//                                    .padding(.horizontal, 18)
-//                                    .allowsHitTesting(false)
-//                                    .foregroundStyle(.indigo)
-//                                    .opacity(0.6)
-//                                
-//                            }
-//                        }
-//                }
+                .padding()
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(12)
+            }
+            
+            // Password field
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Password")
+                    .font(.subheadline)
+                    .foregroundColor(.secondary)
+                
+                HStack {
+                    Image(systemName: "lock")
+                        .foregroundColor(.secondary)
+                    
+                    SecureField("Password", text: $password)
+                        .focused(fieldIsFocused)
+                }
+                .padding()
+                .background(Color(UIColor.secondarySystemBackground))
+                .cornerRadius(12)
             }
             
             if authType == .login {
@@ -176,262 +229,148 @@ struct PhoneEmailAuthView: View {
                     displayForgotPasswordSheet = true
                 } label: {
                     Text("Forgot password?")
+                        .font(.footnote)
+                        .foregroundColor(Color(red: 0.95, green: 0.4, blue: 0.4)) // Warm red
                         .frame(maxWidth: .infinity, alignment: .trailing)
-                        .foregroundStyle(.black.opacity(0.6))
-                        .padding(.vertical)
                 }
+                .padding(.vertical, 5)
             }
             
+            // Login/Signup button
             Button {
-                isAuthenticating = true
-                if email.isEmpty || password.isEmpty {
-                    if email.isEmpty {
-                        errorMessage = "Please enter an email address."
-                    } else if password.isEmpty {
-                        errorMessage = "Please enter a password."
+                handleAuthentication()
+            } label: {
+                HStack {
+                    if isAuthenticating {
+                        ProgressView()
+                            .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                            .padding(.trailing, 5)
                     }
                     
-                    withAnimation {
-                        displayErrorMessage = true
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                        withAnimation {
-                            displayErrorMessage = false
-                        }
-                    }
-                    isAuthenticating = false
-                    return
+                    Text(authType == .login ? "Sign In" : "Create Account")
+                        .fontWeight(.semibold)
                 }
-                
-                if authType == .signup && password.count < 6 {
-                    errorMessage = "Password must be at least 6 characters long."
-                    withAnimation {
-                        displayErrorMessage = true
-                    }
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                        withAnimation {
-                            displayErrorMessage = false
-                        }
-                    }
-                    isAuthenticating = false
-                    return
-                }
-                
-                if authType == .login {
-                    authViewModel.signInWithEmailAndPassword(email: email, password: password) { result in
-                        switch result {
-                        case .success:
-                            Task { @MainActor in
-                                // In case user was created with FirebaseAuth but not in Firestore
-                                let status = await userViewModel.createUser()
-                                if !status {
-                                    errorMessage = "An error occurred while creating your user account. Try logging in!"
-                                    withAnimation {
-                                        displayErrorMessage = true
-                                    }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                                        withAnimation {
-                                            displayErrorMessage = false
-                                        }
-                                    }
-                                }
-                            }
-                        case .failure(let error):
-                            isAuthenticating = false
-                            if let authError = error as? AuthErrorCode {
-                                switch authError {
-                                case .accountExistsWithDifferentCredential:
-                                    errorMessage = "This email address is already in use. Delete local app data and try again."
-                                case .userNotFound, .invalidCredential, .wrongPassword:
-                                    errorMessage = "Invalid email or password."
-                                case .emailAlreadyInUse:
-                                    errorMessage = "You're already logged in. Delete local app data and try again."
-                                case .invalidEmail:
-                                    errorMessage = "Invalid email address. Check your spelling and try again."
-                                default:
-                                    errorMessage = "An error occurred while trying to log in. Try again later."
-                                }
-                            } else {
-                                errorMessage = "An error occurred while logging in. Try again later."
-                            }
-                            withAnimation {
-                                displayErrorMessage = true
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                                withAnimation {
-                                    displayErrorMessage = false
-                                }
-                            }
-                        }
-                    }
-                } else {
-                    authViewModel.registerWithEmailAndPassword(email: email, password: password) { result in
-                        switch result {
-                        case .success:
-                            Task { @MainActor in
-                                let status = await userViewModel.createUser()
-                                if !status {
-                                    errorMessage = "An error occurred while creating your user account. Try logging in!"
-                                    withAnimation {
-                                        displayErrorMessage = true
-                                    }
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                                        withAnimation {
-                                            displayErrorMessage = false
-                                        }
-                                    }                                    }
-                            }
-                        case .failure(let error):
-                            isAuthenticating = false
-                            if let authError = error as? AuthErrorCode {
-                                switch authError {
-                                case .accountExistsWithDifferentCredential:
-                                    errorMessage = "This email address is already in use. Delete local app data and try again."
-                                case .userNotFound, .invalidCredential, .wrongPassword:
-                                    errorMessage = "Invalid email or password."
-                                case .emailAlreadyInUse:
-                                    errorMessage = "You're already logged in. Delete local app data and try again."
-                                case .invalidEmail:
-                                    errorMessage = "Invalid email address. Check your spelling and try again."
-                                default:
-                                    errorMessage = "An error occurred while trying to log in. Try again later."
-                                }
-                            } else {
-                                errorMessage = "An error occurred while logging in. Try again later."
-                            }
-                            withAnimation {
-                                displayErrorMessage = true
-                            }
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
-                                withAnimation {
-                                    displayErrorMessage = false
-                                }
-                            }
-                        }
-                    }
-                }
-            } label: {
-                Text(isEmailAuth ? authType == .login ? "Login" : "Join" : "Send code")
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(isAuthenticating ? .gray : Color.orange)
-                    .opacity(0.9)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                    .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(isAuthenticating ? Color.gray : Color(red: 0.95, green: 0.4, blue: 0.4)) // Warm red
+                .foregroundColor(.white)
+                .cornerRadius(12)
             }
             .disabled(isAuthenticating)
             .buttonStyle(TapEffectButtonStyle())
-            .accessibilityHint(Text("Click to \(authType == .login ? "login" : "join")."))
             
             if authType == .signup {
-                VStack {
-                    Text("By Joining you agree to our")
-                    HStack {
+                VStack(spacing: 5) {
+                    Text("By joining you agree to our")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                    
+                    HStack(spacing: 4) {
                         Button {
                             displayTOSSheet = true
                         } label: {
                             Text("Terms of Service")
+                                .font(.caption)
+                                .foregroundColor(Color(red: 0.95, green: 0.4, blue: 0.4)) // Warm red
                         }
-                        .disabled(isAuthenticating)
+                        
                         Text("and")
+                            .font(.caption)
+                            .foregroundColor(.secondary)
+                        
                         Button {
                             displayPPSheet = true
                         } label: {
                             Text("Privacy Policy")
+                                .font(.caption)
+                                .foregroundColor(Color(red: 0.95, green: 0.4, blue: 0.4)) // Warm red
                         }
-                        .disabled(isAuthenticating)
                     }
                 }
-                .font(.footnote)
+                .padding(.top, 5)
             }
         }
         .sheet(isPresented: $displayForgotPasswordSheet) {
             ForgotPasswordView()
         }
     }
-}
-
-struct AlternativeAuthView: View {
-    @Binding var isEmailAuth: Bool
     
-    var authType: AuthType = .login
-    
-    var body: some View {
-        VStack (spacing: 20) {
-                HStack {
-                    Rectangle()
-                        .foregroundStyle(LinearGradient(colors: [.clear, .orange], startPoint: .leading, endPoint: .trailing))
-                        .opacity(0.9)
-                        .frame(maxWidth: .infinity, maxHeight: 2)
-                    Text("Or")
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 5)
-                    Rectangle()
-                        .foregroundStyle(LinearGradient(colors: [.orange, .clear], startPoint: .leading, endPoint: .trailing))
-                        .opacity(0.9)
-                        .frame(maxWidth: .infinity, maxHeight: 2)
-                }
-                .padding(.bottom, 5)
+    private func handleAuthentication() {
+        isAuthenticating = true
+        errorMessage = ""
+        
+        // Validate inputs
+        if email.isEmpty || password.isEmpty {
+            errorMessage = email.isEmpty ? "Please enter an email address." : "Please enter a password."
+            displayErrorMessage = true
+            isAuthenticating = false
             
-            VStack {
-                Button {
-                    withAnimation {
-                        isEmailAuth.toggle()
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                displayErrorMessage = false
+            }
+            return
+        }
+        
+        if authType == .signup && password.count < 6 {
+            errorMessage = "Password must be at least 6 characters long."
+            displayErrorMessage = true
+            isAuthenticating = false
+            
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                displayErrorMessage = false
+            }
+            return
+        }
+        
+        // Perform authentication
+        if authType == .login {
+            authViewModel.signInWithEmailAndPassword(email: email, password: password) { result in
+                handleAuthResult(result: result)
+            }
+        } else {
+            authViewModel.registerWithEmailAndPassword(email: email, password: password) { result in
+                handleAuthResult(result: result)
+            }
+        }
+    }
+    
+    private func handleAuthResult(result: Result<AuthDataResult, Error>) {
+        switch result {
+        case .success:
+            Task { @MainActor in
+                let status = await userViewModel.createUser()
+                if !status {
+                    errorMessage = "An error occurred while creating your user account. Try logging in!"
+                    displayErrorMessage = true
+                    
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                        displayErrorMessage = false
                     }
-                } label: {
-                    HStack {
-                        Image(systemName: isEmailAuth ? "phone" : "mail")
-                        Text("\(authType == .login ? "Continue with" : "Signup with") \(isEmailAuth ? "Phone Number" : "Email")")
-                    }
-                    .foregroundStyle(.white)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(.black)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
                 }
-                .buttonStyle(TapEffectButtonStyle())
-                
-                Button {
-                    if authType == .login {
-                        print("Logging in with Apple")
-                    } else {
-                        print("Joining TerraTide with Apple")
-                    }
-                } label: {
-                    HStack {
-                        Image(systemName: "applelogo")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                        Text(authType == .login ? "Continue with Apple" : "Signup with Apple")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(.black)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
+            }
+        case .failure(let error):
+            isAuthenticating = false
+            
+            if let authError = error as? AuthErrorCode {
+                switch authError {
+                case .accountExistsWithDifferentCredential:
+                    errorMessage = "This email address is already in use with a different sign-in method."
+                case .userNotFound, .invalidCredential, .wrongPassword:
+                    errorMessage = "Invalid email or password."
+                case .emailAlreadyInUse:
+                    errorMessage = "This email is already in use."
+                case .invalidEmail:
+                    errorMessage = "Invalid email address. Please check and try again."
+                default:
+                    errorMessage = "Authentication failed. Please try again later."
                 }
-                .buttonStyle(TapEffectButtonStyle())
-                
-                Button {
-                    if authType == .login {
-                        print("Logging in with Google")
-                    } else {
-                        print("Joining TerraTide with Google")
-                    }
-                } label: {
-                    HStack {
-                        Image("googlelogo")
-                            .resizable()
-                            .frame(width: 20, height: 20)
-                        Text(authType == .login ? "Continue with Google" : "Signup with Google")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(.black)
-                    .foregroundStyle(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 10))
-                }
-                .buttonStyle(TapEffectButtonStyle())
+            } else {
+                errorMessage = "An error occurred. Please try again later."
+            }
+            
+            displayErrorMessage = true
+            DispatchQueue.main.asyncAfter(deadline: .now() + 5) {
+                displayErrorMessage = false
             }
         }
     }
@@ -441,17 +380,20 @@ struct SwitchAuthView: View {
     @Binding var authType: AuthType
     
     var body: some View {
-        HStack {
-            Text(authType == .login ? "Don't have an account?": "Already got an account?")
+        HStack(spacing: 4) {
+            Text(authType == .login ? "Don't have an account?" : "Already have an account?")
+                .font(.footnote)
+                .foregroundColor(.secondary)
+            
             Button {
-                if authType == .login {
-                    authType = .signup
-                } else {
-                    authType = .login
+                withAnimation {
+                    authType = authType == .login ? .signup : .login
                 }
             } label: {
-                Text(authType == .login ? "Join" : "Login")
-                    .foregroundStyle(.orange)
+                Text(authType == .login ? "Sign Up" : "Sign In")
+                    .font(.footnote)
+                    .fontWeight(.medium)
+                    .foregroundColor(Color(red: 0.95, green: 0.4, blue: 0.4)) // Warm red
             }
         }
     }
@@ -460,3 +402,34 @@ struct SwitchAuthView: View {
 #Preview {
     AuthView()
 }
+
+// Fix for Inject hot reloading
+extension AuthView {
+    func injected() {
+        // This method will be called by Inject when hot reloading
+        // No need to manually trigger view refresh as @ObserveInjection handles it
+    }
+}
+
+// MARK: - Inject Configuration
+// Add this to your main app file to fix the Inject error:
+/*
+import Inject
+
+@main
+struct TerraTideApp: App {
+    @ObserveInjection var inject
+    
+    init() {
+        // Set custom path if InjectionIII is not in the default location
+        Inject.bundlePath = "/Applications/InjectionIII.app/Contents/Resources"
+    }
+    
+    var body: some Scene {
+        WindowGroup {
+            ContentView()
+                .enableInjection()
+        }
+    }
+}
+*/
