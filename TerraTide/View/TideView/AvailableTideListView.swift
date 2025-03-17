@@ -2,97 +2,78 @@
 //  AvailableTideListView.swift
 //  TerraTide
 //
-//  Created by Dlovan Sharif on 2025-01-25.
+//  Created by Dlovan Sharif on 2025-02-02.
 //
 
 import SwiftUI
 
 struct AvailableTideListView: View {
     @EnvironmentObject private var tidesViewModel: TidesViewModel
-    @EnvironmentObject private var locationService: LocationService
     @EnvironmentObject private var userViewModel: UserViewModel
-    @Binding var path: [Route]
-    
-    @State private var attemptingToJoinTide: Bool = false
+    @EnvironmentObject private var locationService: LocationService
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
+    @State private var joiningTide: Bool = false
+    @State private var showTideDetail: Bool = false
+    @State private var selectedTideId: String = ""
     
     var body: some View {
-        ZStack {
+        VStack {
+            HStack {
+                Text("Available Tides")
+                    .font(.title2)
+                    .fontWeight(.bold)
+                    .foregroundColor(.white)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal)
+            }
+            
             if tidesViewModel.availableTidesHaveLoaded {
-                VStack {
-                    HStack {
-                        Button {
-                            print("Don't touch.")
-                        } label: {
-                            Image(systemName: "plus.circle")
-                                .foregroundStyle(.orange)
-                                .font(.largeTitle)
-                        }
-                        .hidden()
-                        Spacer()
-                        Text("Available Tides")
-                            .fixedSize(horizontal: true, vertical: false)
-                        Spacer()
-                        Button {
-                            path.append(.general("createTide"))
-                        } label: {
-                            Image(systemName: "plus.circle")
-                                .foregroundStyle(.orange)
-                                .font(.system(size: 28))
+                ScrollView {
+                    LazyVStack(spacing: 15) {
+                        ForEach(tidesViewModel.availableTides, id: \.self) { tide in
+                            // Card for available tides
+                            AvailableTideCard(
+                                tideId: tide.id ?? "",
+                                title: tide.title,
+                                creator: tide.creatorUsername,
+                                participants: "\(tide.participantCount)/\(tide.maxParticipants)",
+                                description: tide.description
+                            )
                         }
                     }
-                    .padding(.horizontal, 5)
-                    
-                    ScrollView {
-                        LazyVStack {
-                            ForEach(tidesViewModel.availableTides) { tide in
-                                TideItemView(tide: tide, path: $path, attemptingToJoinTide: $attemptingToJoinTide)
-                            }
-                        }
-                    }
-                    .scrollIndicators(.hidden)
+                    .padding(.horizontal)
+                    .padding(.bottom, 30)
                 }
+                .scrollIndicators(.hidden)
+                .padding(.top, 10)
             } else {
-                LoadingView()
+                Spacer()
+                ProgressView()
+                    .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                    .scaleEffect(1.5)
+                Spacer()
             }
         }
-        .padding()
-        .frame(maxHeight: .infinity, alignment: .bottom)
+        .frame(maxHeight: .infinity, alignment: .top)
+        .padding(.top, 7)
+        .padding(.bottom, 20)
+        .background(Color.clear) // Ensure background is transparent
         .onAppear {
+            joiningTide = false
             Task { @MainActor in
-                attemptingToJoinTide = false
-                if let userLocation = locationService.userLocation, let user = userViewModel.user {
+                if let userId = userViewModel.user?.id,
+                   let userLocation = locationService.userLocation {
+                    // Using the correct parameters for the method
+                    let isAdult = userViewModel.user?.adult ?? false
+                    let blockedUsers = userViewModel.user?.blockedUsers ?? [:]
+                    let blockedByUsers = userViewModel.user?.blockedByUsers ?? []
+                    
                     tidesViewModel.attachAvailableTidesListener(
                         for: userLocation,
-                        adult: user.adult,
-                        userId: user.id,
-                        blockedUsers: user.blockedUsers,
-                        blockedByUsers: user.blockedByUsers
-                    )
-                }
-            }
-        }
-        .onChange(of: userViewModel.user?.blockedUsers) { _, _ in
-            Task {
-                if let userLocation = locationService.userLocation, let user = userViewModel.user {
-                    tidesViewModel.attachAvailableTidesListener(
-                        for: userLocation,
-                        adult: user.adult,
-                        userId: user.id,
-                        blockedUsers: user.blockedUsers,
-                        blockedByUsers: user.blockedByUsers
-                    )
-                }
-            }
-        }
-        .onChange(of: userViewModel.user?.blockedUsers) { _, _ in
-            Task {
-                if let userLocation = locationService.userLocation, let user = userViewModel.user {
-                    tidesViewModel.attachAvailableTidesListener(
-                        for: userLocation,
-                        adult: user.adult,
-                        userId: user.id,
-                        blockedUsers: user.blockedUsers,
-                        blockedByUsers: user.blockedByUsers
+                        adult: isAdult,
+                        userId: userId,
+                        blockedUsers: blockedUsers,
+                        blockedByUsers: blockedByUsers
                     )
                 }
             }
@@ -103,168 +84,208 @@ struct AvailableTideListView: View {
                 print("Available tides listener destroyed.")
             }
         }
+        .onChange(of: singleTideViewModel.lastJoinedTideId) { oldValue, newValue in
+            if let tideId = newValue, !tideId.isEmpty {
+                print("New tide joined with ID: \(tideId)")
+                selectedTideId = tideId
+                showTideDetail = true
+                // Reset lastJoinedTideId after we've handled it
+                Task { @MainActor in
+                    singleTideViewModel.lastJoinedTideId = nil
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showTideDetail) {
+            TideDetailView(tideId: selectedTideId)
+        }
     }
 }
 
-struct TideItemView: View {
-    let tide: Tide
-    @Binding var path: [Route]
-    @Binding var attemptingToJoinTide: Bool
+// Card for available tides with different colors
+struct AvailableTideCard: View {
+    let tideId: String
+    let title: String
+    let creator: String
+    let participants: String
+    var description: String = "Join this tide to collaborate with others and achieve your goals together."
     
-    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
-    @State private var actionButtonText: String = "Join"
-    @State private var showReportTideSheet: Bool = false
-    @State private var showBlockingAlert: Bool = false
-    @State private var blockStatusMessage: String = ""
-    @State private var displayBlockMessage: Bool = false
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
+    @State private var isJoining: Bool = false
+    @State private var joinStatus: String? = nil
+    @State private var showJoinStatus: Bool = false
     
     var body: some View {
         ZStack {
-            VStack (spacing: 10) {
-                Text(tide.title)
-                    .frame(maxWidth: .infinity,alignment: .leading)
-                Divider()
-                    .background(.gray)
-                Text(tide.description)
-                    .frame(maxWidth: .infinity,alignment: .leading)
-                Divider()
-                    .background(.gray)
+            // Card background with gradient - different colors from ActiveTideListView
+            RoundedRectangle(cornerRadius: 16)
+                .fill(
+                    LinearGradient(
+                        gradient: Gradient(colors: [
+                            Color(red: 0.2, green: 0.6, blue: 0.5),  // Teal
+                            Color(red: 0.1, green: 0.4, blue: 0.4)   // Deep teal
+                        ]),
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 16)
+                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 1)
+                )
+            
+            // Content
+            VStack(alignment: .leading, spacing: 12) {
+                // Header with title and participants
                 HStack {
-                    Text("By: \(tide.creatorUsername)")
+                    Text(title)
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                        .lineLimit(1)
+                    
                     Spacer()
-                    Image(systemName: "person.fill")
-                    Text("\(tide.participantCount)/\(tide.maxParticipants)")
+                    
+                    // Participant badge
+                    HStack(spacing: 4) {
+                        Image(systemName: "person.fill")
+                            .font(.system(size: 12))
+                        Text(participants)
+                            .font(.system(size: 12, weight: .medium))
+                    }
+                    .padding(.horizontal, 10)
+                    .padding(.vertical, 5)
+                    .background(Color.white.opacity(0.2))
+                    .clipShape(Capsule())
+                    .foregroundColor(.white)
                 }
                 
-                HStack {
-                    Button {
-                        Task {@MainActor in
-                            attemptingToJoinTide = true
-                            if let user = userViewModel.user, let tideId = tide.id {
-                                let status = await singleTideViewModel.joinTide(tideId: tideId, userId: user.id, username: user.username)
-                                
-                                var hasJoined = false
-                                
-                                switch status {
-                                case .invalidTide, .noDocument:
-                                    actionButtonText = "Could not find Tide :("
-                                case .alreadyJoined:
-                                    actionButtonText = "Already a member...weird"
-                                case .full:
-                                    actionButtonText = "Tide is full :("
-                                case .failed:
-                                    actionButtonText = "Could not join Tide :(, something went wrong."
-                                case .joined:
-                                    hasJoined = true
-                                    path.append(.tide(tide.id!))
-                                }
-                                
-                                if !hasJoined {
-                                    attemptingToJoinTide = false
-                                }
-                            } else {
-                                attemptingToJoinTide = false
+                // Creator with icon
+                HStack(spacing: 6) {
+                    Image(systemName: "person.circle.fill")
+                        .foregroundColor(.white.opacity(0.8))
+                        .font(.system(size: 14))
+                    
+                    Text(creator)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                
+                // Description - increased line limit and added more vertical space
+                Text(description)
+                    .font(.system(size: 14))
+                    .foregroundColor(.white.opacity(0.9))
+                    .lineLimit(3) // Increased from 2 to 3 lines
+                    .padding(.top, 8) // Increased top padding
+                    .padding(.bottom, 4) // Added bottom padding
+                
+                Spacer()
+                
+                // Join button - now full width
+                Button {
+                    joinTide()
+                } label: {
+                    HStack {
+                        if isJoining {
+                            ProgressView()
+                                .progressViewStyle(CircularProgressViewStyle(tint: .white))
+                                .scaleEffect(0.8)
+                                .padding(.trailing, 5)
+                        } else {
+                            Text(isJoining ? "Joining..." : "Join")
+                                .font(.system(size: 15, weight: .semibold))
+                            
+                            if !isJoining {
+                                Image(systemName: "plus.circle.fill")
+                                    .font(.system(size: 15))
                             }
                         }
-                    } label: {
-                        HStack {
-                            Text(actionButtonText)
-                            Image(systemName: "arrow.forward")
-                        }
-                        .frame(maxWidth: .infinity, maxHeight: .infinity)
-                        .padding(10)
-                        .background(attemptingToJoinTide ? .gray : .orange)
-                        .foregroundStyle(.white)
-                        .clipShape(RoundedRectangle(cornerRadius: 5))
-                        
                     }
-                    .buttonStyle(TapEffectButtonStyle())
-                    .disabled(attemptingToJoinTide)
+                    .frame(maxWidth: .infinity)
+                    .padding(.vertical, 12)
+                    .background(
+                        LinearGradient(
+                            gradient: Gradient(colors: [
+                                Color.white.opacity(0.3),
+                                Color.white.opacity(0.1)
+                            ]),
+                            startPoint: .leading,
+                            endPoint: .trailing
+                        )
+                    )
+                    .clipShape(RoundedRectangle(cornerRadius: 10))
+                    .foregroundColor(.white)
                 }
-                
+                .disabled(isJoining)
             }
-            .padding()
-            .overlay {
-                RoundedRectangle(cornerRadius: 10)
-                    .stroke(Color.black, lineWidth: 1)
-                    .blur(radius: 20)
-            }
-            .overlay {
+            .padding(16)
+            
+            // Status overlay
+            if showJoinStatus, let status = joinStatus {
                 VStack {
-                    Text(blockStatusMessage)
-                        .foregroundStyle(.white)
+                    Text(status)
+                        .font(.headline)
+                        .padding()
+                        .background(Color.black.opacity(0.7))
+                        .foregroundColor(.white)
+                        .cornerRadius(10)
                 }
                 .frame(maxWidth: .infinity, maxHeight: .infinity)
-                .background(.black)
-                .scaleEffect(displayBlockMessage ? 1 : 0)
-                .animation(.spring, value: displayBlockMessage)
-            }
-            
-        }
-        .frame(maxWidth: .infinity, alignment: .topLeading)
-        .clipShape(RoundedRectangle(cornerRadius: 10))
-        .background(.white)
-        .contextMenu {
-            if userViewModel.user?.id != tide.creatorId {
-                Button {
-                    showReportTideSheet = true
-                } label: {
-                    Text("Report")
-                }
-                Button {
-                    showBlockingAlert = true
-                } label: {
-                    Text("Block User")
-                }
+                .background(Color.black.opacity(0.3))
+                .transition(.opacity)
             }
         }
-        .sheet(isPresented: $showReportTideSheet) {
-            ReportView(reportType: .tide, tideId: tide.id ?? "", reportByUserId: userViewModel.user?.id ?? "", reportAgainstUserId: tide.creatorId, showReportSheet: $showReportTideSheet)
-        }
-        .alert("Blocking this user will hide their Tides and messages.", isPresented: $showBlockingAlert) {
-            Button(role: .cancel) {
-                showBlockingAlert = false
-            } label: {
-                Text("Cancel")
-                    .foregroundStyle(.black)
-                    .background(.blue)
-            }
-            Button(role: .destructive) {
-                Task { @MainActor in
-                    let blockStatus = await userViewModel.blockUser(blocking: tide.creatorId, againstUsername: tide.creatorUsername, by: userViewModel.user?.id ?? "")
-                    
-                    
-                    switch blockStatus {
-                    case .blocked:
-                        blockStatusMessage = "User blocked!"
-                    case .failed:
-                        blockStatusMessage = "Failed to block user."
-                    case .alreadyBlocked:
-                        blockStatusMessage = "This user is already blocked."
-                    case .missingData:
-                        blockStatusMessage = "Something went wrong. Please try again later."
-                    case .userBlockingNotFound:
-                        blockStatusMessage = "Could not find the user you are trying to block."
-                    case .userToBlockNotFound:
-                        blockStatusMessage = "You aren't authorized. Please try again later."
-                    }
-                    
-                    displayBlockMessage = true
-                    DispatchQueue.main.asyncAfter(deadline: .now() + 3) {
-                        displayBlockMessage = false
-                    }
-                }
-            } label: {
-                Text("Block \(tide.creatorUsername)")
-            }
-        } message: {
-            Text("\n1. You won't see their Tides or messages anymore.\n\n2. You'll still be able to join the same Tides as long as neither of you are the creators.")
-        }
+        .frame(height: 220) // Increased height to accommodate more description text
+        .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 5)
+    }
+    
+    private func joinTide() {
+        guard let userId = userViewModel.user?.id, 
+              let username = userViewModel.user?.username else { return }
         
+        isJoining = true
+        
+        Task {
+            let status = await singleTideViewModel.joinTide(
+                tideId: tideId,
+                userId: userId,
+                username: username
+            )
+            
+            // Handle join status
+            await MainActor.run {
+                switch status {
+                case .joined, .alreadyJoined:
+                    joinStatus = status == .joined ? "Successfully joined tide!" : "You're already a member of this tide"
+                    // Set the lastJoinedTideId to trigger navigation
+                    DispatchQueue.main.async {
+                        singleTideViewModel.lastJoinedTideId = tideId
+                    }
+                    
+                case .invalidTide:
+                    joinStatus = "Invalid tide data"
+                case .noDocument:
+                    joinStatus = "Tide not found"
+                case .full:
+                    joinStatus = "This tide is full"
+                case .failed:
+                    joinStatus = "Failed to join tide"
+                }
+                
+                showJoinStatus = true
+                
+                // Hide status after a delay
+                DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
+                    withAnimation {
+                        showJoinStatus = false
+                    }
+                }
+                
+                isJoining = false
+            }
+        }
     }
 }
 
 #Preview {
-    AvailableTideListView(path: .constant([]))
+    AvailableTideListView()
 }
