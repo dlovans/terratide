@@ -8,326 +8,192 @@
 import SwiftUI
 
 struct MenuView: View {
-    let tideId: String = "123"
-    @StateObject private var chatViewModel = ChatViewModel()
-    @StateObject private var tidesViewModel = TidesViewModel()
-    @StateObject private var singleTideViewModel = SingleTideViewModel()
-    @StateObject private var reportViewModel = ReportViewModel()
-    
-    @EnvironmentObject var locationService: LocationService
-    @State private var path: [Route] = []
-    @State private var position = ScrollPosition(edge: .leading)
-    @State private var currentPage = 1
-    @State private var displayMenu: Bool = false
-    @State private var rotateLines: Bool = false
-    @State private var isTransitioning: Bool = false
-    @FocusState var chatFieldIsFocused: Bool
+    @Environment(\.colorScheme) private var colorScheme
+    @State private var currentPage: Page = .availableTides
     
     var body: some View {
-        NavigationStack(path: $path) {
+        // Root ZStack with fixed background
+        GeometryReader { geometry in
             ZStack {
-                TabView(selection: $currentPage) {
-                    Tab(value: 0) {
-                        ActiveTideListView(path: $path)
-                            .environmentObject(tidesViewModel)
-                            .environmentObject(reportViewModel)
-                            .environmentObject(singleTideViewModel)
-                            .onAppear {
-                                if currentPage == 0 && isTransitioning {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                        isTransitioning = false
-                                    }
-                                }
-                            }
-                    }
-                    Tab(value: 1) {
-                        AvailableTideListView(path: $path)
-                            .environmentObject(tidesViewModel)
-                            .environmentObject(reportViewModel)
-                            .environmentObject(singleTideViewModel)
-                            .onAppear {
-                                if currentPage == 1 && isTransitioning {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                        isTransitioning = false
-                                    }
-                                }
-                            }
-                    }
-                    
-                    Tab(value: 2) {
-                        ChatView(chatFieldIsFocused: $chatFieldIsFocused)
-                            .environmentObject(chatViewModel)
-                            .environmentObject(reportViewModel)
-                            .onAppear {
-                                if currentPage == 2 && isTransitioning {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                        isTransitioning = false
-                                    }
-                                }
-                            }
-                    }
-                    
-                    Tab(value: 3) {
-                        SettingsView(path: $path)
-                            .onAppear {
-                                if currentPage == 3 && isTransitioning {
-                                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.25) {
-                                        isTransitioning = false
-                                    }
-                                }
-                            }
+                // Modern gradient background - matching AuthView
+                LinearGradient(
+                    gradient: Gradient(colors: [
+                        Color(red: 0.95, green: 0.4, blue: 0.4), // Warm red
+                        Color(red: 0.95, green: 0.6, blue: 0.3)  // Warm orange
+                    ]),
+                    startPoint: .topLeading,
+                    endPoint: .bottomTrailing
+                )
+                .ignoresSafeArea()
+                
+                // Fun pattern overlay - matching AuthView
+                ZStack {
+                    ForEach(0..<20) { i in
+                        Circle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: CGFloat.random(in: 50...150))
+                            .position(
+                                x: CGFloat.random(in: 0...geometry.size.width),
+                                y: CGFloat.random(in: 0...geometry.size.height)
+                            )
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .never))
-                .onChange(of: currentPage) { _, _ in
-                    if chatFieldIsFocused {
-                        withAnimation {
-                            chatFieldIsFocused = false
+                .ignoresSafeArea()
+                
+                // Main content with navigation
+                VStack(spacing: 0) {
+                    // Content area - changes based on selected page
+                    ZStack {
+                        if currentPage == .activeTides {
+                            ActiveTideListView()
+                                .transition(.opacity)
+                        }
+                        
+                        if currentPage == .availableTides {
+                            AvailableTideListView()
+                                .transition(.opacity)
+                        }
+                        
+                        if currentPage == .chat {
+                            VStack {
+                                Text("Chat View")
+                                    .font(.title)
+                                    .foregroundColor(.white)
+                                
+                                Text("This is where chat messages would appear")
+                                    .font(.body)
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .padding()
+                            }
+                            .transition(.opacity)
+                        }
+                        
+                        if currentPage == .settings {
+                            VStack {
+                                Text("Settings View")
+                                    .font(.title)
+                                    .foregroundColor(.white)
+                                
+                                Text("This is where settings would appear")
+                                    .font(.body)
+                                    .foregroundColor(.white.opacity(0.8))
+                                    .padding()
+                            }
+                            .transition(.opacity)
                         }
                     }
+                    .frame(maxHeight: .infinity)
+                    .background(Color.clear)
+                    .padding(.horizontal)
+                    
+                    // Custom Tab Bar
+                    CustomTabBar(currentPage: $currentPage)
+                        .padding(.bottom, 8)
                 }
-                .navigationDestination(for: Route.self) { route in
-                    switch route {
-                    case let .general(routeName):
-                        if routeName == "createTide" {
-                            CreateTideView(path: $path)
-                                .navigationBarBackButtonHidden()
-                        } else if routeName == "blockedUsers" {
-                            BlockedUsersView(path: $path)
-                                .navigationBarBackButtonHidden()
-                        } else if routeName == "deleteAccount" {
-                            DeleteAccountConfirmationView(path: $path)
-                                .navigationBarBackButtonHidden()
-                        }
-                    case let .tide(tideId):
-                        TidePageView(path: $path, tideId: tideId)
-                            .navigationBarBackButtonHidden()
-                    @unknown default:
-                        Text("Unknown Route")
-                    }
-                }
-                
-                SideMenuView(displayMenu: $displayMenu, currentPage: $currentPage, rotateLines: $rotateLines, isTransitioning: $isTransitioning)
-                HamburgerMenuButtonView(displayMenu: $displayMenu, rotateLines: $rotateLines)
-                    .padding()
-                
-                ZStack{}
-                    .frame(maxWidth: .infinity, maxHeight: .infinity)
-                    .ignoresSafeArea(edges: .all)
-                    .background(.white)
-                    .opacity(isTransitioning ? 0.4 : 0)
-                    .allowsHitTesting(isTransitioning)
+                .background(Color.clear) // Ensure menu container is transparent
             }
         }
     }
 }
 
-struct SideMenuView: View {
-    @Binding var displayMenu: Bool
-    @Binding var currentPage: Int
-    @Binding var rotateLines: Bool
-    @Binding var isTransitioning: Bool
+// MARK: - Custom Tab Bar
+struct CustomTabBar: View {
+    @Binding var currentPage: Page
+    @Environment(\.colorScheme) private var colorScheme
     
-    @EnvironmentObject var userViewModel: UserViewModel
-
+    private var selectedColor: Color {
+        Color(red: 0.95, green: 0.4, blue: 0.4)
+    }
+    
     var body: some View {
-        ZStack {
-            GeometryReader { geometry in
-                HStack (spacing: 0) {
-                    VStack {
-                        VStack {
-                            if let username = userViewModel.user?.username {
-                                Text("👋 \(username)")
-                                    .foregroundStyle(.white)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                            }
-                            Button {
-                                isTransitioning = true
-                                withAnimation {
-                                    displayMenu = false
-                                    rotateLines = false
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                    withAnimation {
-                                        currentPage = 0
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Group {
-                                        Image("tides")
-                                            .resizable()
-                                            .frame(width: 24, height: 24)
-                                            .foregroundStyle(.green)
-                                        Text("Active Tides")
-                                    }
-                                    .foregroundStyle(currentPage == 0 ? .white: .black)
-                                }
-                                .padding(.horizontal)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .background(currentPage == 0 ? .orange : .white)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                            }
-                            
-                            Button {
-                                isTransitioning = true
-                                withAnimation {
-                                    displayMenu = false
-                                    rotateLines = false
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                    withAnimation {
-                                        currentPage = 1
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Group {
-                                        Image("tides")
-                                            .resizable()
-                                            .frame(width: 24, height: 24)
-                                        Text("Available Tides")
-                                    }
-                                    .foregroundStyle(currentPage == 1 ? .white: .black)
-                                }
-                                .padding(.horizontal)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .background(currentPage == 1 ? .orange : .white)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                            }
-                            
-                            Button {
-                                isTransitioning = true
-                                withAnimation {
-                                    displayMenu = false
-                                    rotateLines = false
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                    withAnimation {
-                                        currentPage = 2
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Group {
-                                        Image(systemName: "bubble.left.and.bubble.right")
-                                        Text("Chat")
-                                    }
-                                    .foregroundStyle(currentPage == 2 ? .white: .black)
-                                }
-                                .padding(.horizontal)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .background(currentPage == 2 ? .orange : .white)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                            }
-                            
-                            Button {
-                                isTransitioning = true
-                                withAnimation {
-                                    displayMenu = false
-                                    rotateLines = false
-                                }
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                    withAnimation {
-                                        currentPage = 3
-                                    }
-                                }
-                            } label: {
-                                HStack {
-                                    Group {
-                                        Image(systemName: "gear")
-                                        Text("Settings")
-                                    }
-                                    .foregroundStyle(currentPage == 3 ? .white: .black)
-                                }
-                                .padding(.horizontal)
-                                .padding(.vertical, 12)
-                                .frame(maxWidth: .infinity)
-                                .background(currentPage == 3 ? .orange : .white)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                            }
-                        }
-                        .padding(.top, 100)
-                        .padding(.horizontal, 10)
-                        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
-                        .background(Color.black)
-                    }
-                    .frame(width: geometry.size.width * 0.65)
-                    .frame(maxHeight: .infinity)
-                    
-                    VStack {
-                        EmptyView()
-                    }
-                    .frame(width: geometry.size.width * 0.35)
-                    .frame(maxHeight: .infinity)
-                    .background(Color.black)
-                    .opacity(0.01)
-                    .onTapGesture {
-                        withAnimation {
-                            displayMenu = false
-                            rotateLines = false
-                        }
-                    }
-                    
+        HStack(spacing: 0) {
+            TabButton(
+                icon: "wave.3.right",
+                title: "Active",
+                isSelected: currentPage == .activeTides,
+                selectedColor: selectedColor
+            ) {
+                withAnimation {
+                    currentPage = .activeTides
                 }
             }
             
+            TabButton(
+                icon: "mappin.and.ellipse",
+                title: "Available",
+                isSelected: currentPage == .availableTides,
+                selectedColor: selectedColor
+            ) {
+                withAnimation {
+                    currentPage = .availableTides
+                }
+            }
+            
+            TabButton(
+                icon: "message",
+                title: "Chat",
+                isSelected: currentPage == .chat,
+                selectedColor: selectedColor
+            ) {
+                withAnimation {
+                    currentPage = .chat
+                }
+            }
+            
+            TabButton(
+                icon: "gearshape",
+                title: "Settings",
+                isSelected: currentPage == .settings,
+                selectedColor: selectedColor
+            ) {
+                withAnimation {
+                    currentPage = .settings
+                }
+            }
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .offset(x: displayMenu ? 0: -UIScreen.main.bounds.width)
+        .padding(.vertical, 8)
+        .background(Color.white.opacity(0.2))
+        .cornerRadius(16)
+        .shadow(color: Color.black.opacity(0.1), radius: 5, x: 0, y: -2)
+        .padding(.horizontal)
     }
 }
 
-
-struct HamburgerMenuButtonView: View {
-    @Binding var displayMenu: Bool
-    @Binding var rotateLines: Bool
+// MARK: - Tab Button
+struct TabButton: View {
+    let icon: String
+    let title: String
+    let isSelected: Bool
+    let selectedColor: Color
+    let action: () -> Void
+    
     var body: some View {
-        VStack {
-            HStack {
-                Button {
-                    withAnimation {
-                        displayMenu.toggle()
-                        rotateLines.toggle()
-                    }
-                } label: {
-                    VStack (spacing: 7) {
-                        Group {
-                            Rectangle()
-                                .fill(Color.orange)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .rotationEffect(rotateLines ? Angle(degrees: 45) : .zero, anchor: .center)
-                                .offset(y: rotateLines ? 10: 0)
-                            Rectangle()
-                                .fill(Color.orange)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .offset(x: rotateLines ? -100 : 0)
-                                .opacity(rotateLines ? 0 : 1)
-                            Rectangle()
-                                .fill(Color.orange)
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
-                                .rotationEffect(rotateLines ? Angle(degrees: -45): .zero, anchor: .center)
-                                .offset(y: rotateLines ? -11: 0)
-                            
-                        }
-                        .frame(width: 40, height: 3.5)
-                    }
-                    .frame(alignment: .bottom)
-                }
-                .padding(.top, 8)
-                .padding(.leading, 5)
+        Button(action: action) {
+            VStack(spacing: 4) {
+                Image(systemName: icon)
+                    .font(.system(size: 20))
+                    .foregroundColor(isSelected ? selectedColor : .white.opacity(0.7))
                 
-                Spacer()
+                Text(title)
+                    .font(.system(size: 12))
+                    .foregroundColor(isSelected ? selectedColor : .white.opacity(0.7))
             }
-            Spacer()
+            .frame(maxWidth: .infinity)
         }
-        .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
+}
+
+// MARK: - Enums
+enum Page {
+    case activeTides, availableTides, chat, settings
 }
 
 #Preview {
     MenuView()
+        .preferredColorScheme(.light)
+}
+
+#Preview {
+    MenuView()
+        .preferredColorScheme(.dark)
 }
