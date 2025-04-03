@@ -7,7 +7,6 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		CA35F9392D8712B500F83D43 /* Inject in Frameworks */ = {isa = PBXBuildFile; productRef = CA35F9382D8712B500F83D43 /* Inject */; };
 		CA4D5C962D79F89A009D6E5F /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = CA4D5C952D79F89A009D6E5F /* LaunchScreen.storyboard */; };
 		CA558A0C2D6CF8D800A8B04A /* TODO.md in Resources */ = {isa = PBXBuildFile; fileRef = CA558A0B2D6CF8D800A8B04A /* TODO.md */; };
 		CAB38CEA2D5E585C003C88B6 /* FirebaseAuth in Frameworks */ = {isa = PBXBuildFile; productRef = CAB38CE92D5E585C003C88B6 /* FirebaseAuth */; };
@@ -50,7 +49,6 @@
 				CAB38CEA2D5E585C003C88B6 /* FirebaseAuth in Frameworks */,
 				CAB38D902D62187D003C88B6 /* FirebaseCore in Frameworks */,
 				CAB38CEC2D5E5862003C88B6 /* FirebaseFirestore in Frameworks */,
-				CA35F9392D8712B500F83D43 /* Inject in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -106,7 +104,6 @@
 				CAB38CE92D5E585C003C88B6 /* FirebaseAuth */,
 				CAB38CEB2D5E5862003C88B6 /* FirebaseFirestore */,
 				CAB38D8F2D62187D003C88B6 /* FirebaseCore */,
-				CA35F9382D8712B500F83D43 /* Inject */,
 			);
 			productName = TerraTide;
 			productReference = CACD89982D3FE97700E672D5 /* TerraTide.app */;
@@ -138,7 +135,6 @@
 			minimizedProjectReferenceProxies = 1;
 			packageReferences = (
 				CAB38CE72D5E57FD003C88B6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */,
-				CA35F9372D8712B500F83D43 /* XCRemoteSwiftPackageReference "Inject" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = CACD89992D3FE97700E672D5 /* Products */;
@@ -384,14 +380,6 @@
 /* End XCConfigurationList section */
 
 /* Begin XCRemoteSwiftPackageReference section */
-		CA35F9372D8712B500F83D43 /* XCRemoteSwiftPackageReference "Inject" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/krzysztofzablocki/Inject.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.5.2;
-			};
-		};
 		CAB38CE72D5E57FD003C88B6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */ = {
 			isa = XCRemoteSwiftPackageReference;
 			repositoryURL = "https://github.com/firebase/firebase-ios-sdk";
@@ -403,11 +391,6 @@
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
-		CA35F9382D8712B500F83D43 /* Inject */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = CA35F9372D8712B500F83D43 /* XCRemoteSwiftPackageReference "Inject" */;
-			productName = Inject;
-		};
 		CAB38CE92D5E585C003C88B6 /* FirebaseAuth */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = CAB38CE72D5E57FD003C88B6 /* XCRemoteSwiftPackageReference "firebase-ios-sdk" */;
