@@ -7,10 +7,8 @@
 
 import SwiftUI
 import FirebaseAuth
-import Inject
 
 struct AuthView: View {
-    @ObserveInjection var inject: InjectConfiguration.Type       
     @EnvironmentObject private var chatViewModel: ChatViewModel
     @EnvironmentObject private var tidesViewModel: TidesViewModel
     @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
@@ -160,7 +158,6 @@ struct AuthView: View {
             NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillShowNotification, object: nil)
             NotificationCenter.default.removeObserver(self, name: UIResponder.keyboardWillHideNotification, object: nil)
         }
-        .enableInjection()
     }
 }
 
@@ -402,34 +399,3 @@ struct SwitchAuthView: View {
 #Preview {
     AuthView()
 }
-
-// Fix for Inject hot reloading
-extension AuthView {
-    func injected() {
-        // This method will be called by Inject when hot reloading
-        // No need to manually trigger view refresh as @ObserveInjection handles it
-    }
-}
-
-// MARK: - Inject Configuration
-// Add this to your main app file to fix the Inject error:
-/*
-import Inject
-
-@main
-struct TerraTideApp: App {
-    @ObserveInjection var inject
-    
-    init() {
-        // Set custom path if InjectionIII is not in the default location
-        Inject.bundlePath = "/Applications/InjectionIII.app/Contents/Resources"
-    }
-    
-    var body: some Scene {
-        WindowGroup {
-            ContentView()
-                .enableInjection()
-        }
-    }
-}
-*/
