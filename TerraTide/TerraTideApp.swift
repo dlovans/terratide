@@ -17,6 +17,7 @@ struct TerraTideApp: App {
     @StateObject private var locationService = LocationService()
     @StateObject private var singleTideViewModel = SingleTideViewModel()
     @StateObject private var tidesViewModel = TidesViewModel()
+    @StateObject private var chatViewModel: ChatViewModel = ChatViewModel()
 
     var body: some Scene {
         WindowGroup {
@@ -26,6 +27,7 @@ struct TerraTideApp: App {
                 .environmentObject(locationService)
                 .environmentObject(singleTideViewModel)
                 .environmentObject(tidesViewModel)
+                .environmentObject(chatViewModel)
                 .onAppear {
 #if DEBUG
                     UserDefaults.standard.set(false, forKey: "_UIConstraintBasedLayoutLogUnsatisfiable")
