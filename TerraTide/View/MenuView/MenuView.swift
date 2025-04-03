@@ -55,17 +55,8 @@ struct MenuView: View {
                         }
                         
                         if currentPage == .chat {
-                            VStack {
-                                Text("Chat View")
-                                    .font(.title)
-                                    .foregroundColor(.white)
-                                
-                                Text("This is where chat messages would appear")
-                                    .font(.body)
-                                    .foregroundColor(.white.opacity(0.8))
-                                    .padding()
-                            }
-                            .transition(.opacity)
+                            ChatIntroView()
+                                .transition(.opacity)
                         }
                         
                         if currentPage == .settings {
