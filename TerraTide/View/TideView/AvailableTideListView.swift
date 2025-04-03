@@ -15,6 +15,16 @@ struct AvailableTideListView: View {
     @State private var joiningTide: Bool = false
     @State private var showTideDetail: Bool = false
     @State private var selectedTideId: String = ""
+    @State private var showCreateTide: Bool = false
+    
+    // Define tide categories
+    let categories = [
+        "Popular": "Most active Tides",
+        "New": "Recently created Tides",
+        "Social": "Tides focused on social activities",
+        "Outdoor": "Tides for outdoor adventures",
+        "Learning": "Educational and skill-sharing Tides"
+    ]
     
     var body: some View {
         VStack {
@@ -25,23 +35,63 @@ struct AvailableTideListView: View {
                     .foregroundColor(.white)
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal)
+                
+                Button {
+                    showCreateTide = true
+                } label: {
+                    Image(systemName: "plus.circle.fill")
+                        .font(.title2)
+                        .foregroundColor(.white)
+                }
+                .padding(.trailing)
             }
             
             if tidesViewModel.availableTidesHaveLoaded {
                 ScrollView {
-                    LazyVStack(spacing: 15) {
-                        ForEach(tidesViewModel.availableTides, id: \.self) { tide in
-                            // Card for available tides
-                            AvailableTideCard(
-                                tideId: tide.id ?? "",
-                                title: tide.title,
-                                creator: tide.creatorUsername,
-                                participants: "\(tide.participantCount)/\(tide.maxParticipants)",
-                                description: tide.description
-                            )
+                    VStack(alignment: .leading, spacing: 25) {
+                        // Custom ordered categories with Popular first, New second, then alphabetically
+                        ForEach(sortedCategories(), id: \.self) { category in
+                            // Only show categories that have tides
+                            if !filteredTides(for: category).isEmpty {
+                                VStack(alignment: .leading, spacing: 8) {
+                                    // Category header
+                                    HStack {
+                                        Text(category)
+                                            .font(.headline)
+                                            .foregroundColor(.white)
+                                            .padding(.leading)
+                                        
+                                        Spacer()
+                                        
+                                        Text(categories[category] ?? "")
+                                            .font(.caption)
+                                            .foregroundColor(.white.opacity(0.7))
+                                            .padding(.trailing)
+                                    }
+                                    
+                                    // Horizontal scroll for this category
+                                    ScrollView(.horizontal, showsIndicators: false) {
+                                        HStack(spacing: 15) {
+                                            // Filter tides for this category
+                                            ForEach(filteredTides(for: category), id: \.self) { tide in
+                                                AvailableTideCard(
+                                                    tideId: tide.id ?? "",
+                                                    title: tide.title,
+                                                    creator: tide.creatorUsername,
+                                                    participants: "\(tide.participantCount)/\(tide.maxParticipants)",
+                                                    description: tide.description,
+                                                    category: category
+                                                )
+                                                .frame(width: 300)
+                                            }
+                                        }
+                                        .padding(.horizontal)
+                                    }
+                                    .padding(.bottom, 5)
+                                }
+                            }
                         }
                     }
-                    .padding(.horizontal)
                     .padding(.bottom, 30)
                 }
                 .scrollIndicators(.hidden)
@@ -98,6 +148,43 @@ struct AvailableTideListView: View {
         .fullScreenCover(isPresented: $showTideDetail) {
             TideDetailView(tideId: selectedTideId)
         }
+        .fullScreenCover(isPresented: $showCreateTide) {
+            // This would navigate to your Create Tide view
+            CreateTideView()
+        }
+    }
+    
+    // Helper function to sort categories in custom order
+    private func sortedCategories() -> [String] {
+        let allCategories = Array(categories.keys)
+        let orderedCategories = allCategories.sorted { (lhs, rhs) -> Bool in
+            if lhs == "Popular" { return true }
+            if rhs == "Popular" { return false }
+            if lhs == "New" { return true }
+            if rhs == "New" { return false }
+            return lhs < rhs // alphabetical for the rest
+        }
+        return orderedCategories
+    }
+    
+    // Function to filter tides by category - in a real implementation this would use proper category data
+    private func filteredTides(for category: String) -> [Tide] {
+        // This is a simplified filtering approach without actual category data
+        // In a real app, you would have categories as part of your Tide model
+        let tides = tidesViewModel.availableTides
+        
+        switch category {
+        case "Popular":
+            return tides.sorted { ($0.participantCount, $0.title) > ($1.participantCount, $1.title) }
+                      .prefix(min(tides.count, 5)).map { $0 }
+        case "New":
+            return Array(tides.suffix(min(tides.count, 5)))
+        case "Social", "Outdoor", "Learning":
+            // For demo purposes, just show some random subset based on the title
+            return tides.filter { $0.title.count % (categories.count) == categories.keys.sorted().firstIndex(of: category)! % (categories.count) }
+        default:
+            return []
+        }
     }
 }
 
@@ -108,6 +195,7 @@ struct AvailableTideCard: View {
     let creator: String
     let participants: String
     var description: String = "Join this tide to collaborate with others and achieve your goals together."
+    var category: String = "Popular"
     
     @EnvironmentObject private var userViewModel: UserViewModel
     @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
@@ -115,16 +203,24 @@ struct AvailableTideCard: View {
     @State private var joinStatus: String? = nil
     @State private var showJoinStatus: Bool = false
     
+    // Colors for different categories
+    private var categoryColors: [String: [Color]] {
+        [
+            "Popular": [Color(red: 0.8, green: 0.3, blue: 0.3), Color(red: 0.6, green: 0.2, blue: 0.2)],
+            "New": [Color(red: 0.4, green: 0.5, blue: 0.8), Color(red: 0.2, green: 0.3, blue: 0.6)],
+            "Social": [Color(red: 0.8, green: 0.5, blue: 0.2), Color(red: 0.6, green: 0.4, blue: 0.1)],
+            "Outdoor": [Color(red: 0.3, green: 0.7, blue: 0.3), Color(red: 0.2, green: 0.5, blue: 0.2)],
+            "Learning": [Color(red: 0.5, green: 0.3, blue: 0.7), Color(red: 0.4, green: 0.2, blue: 0.5)]
+        ]
+    }
+    
     var body: some View {
         ZStack {
-            // Card background with gradient - different colors from ActiveTideListView
+            // Card background with gradient - different colors based on category
             RoundedRectangle(cornerRadius: 16)
                 .fill(
                     LinearGradient(
-                        gradient: Gradient(colors: [
-                            Color(red: 0.2, green: 0.6, blue: 0.5),  // Teal
-                            Color(red: 0.1, green: 0.4, blue: 0.4)   // Deep teal
-                        ]),
+                        gradient: Gradient(colors: categoryColors[category] ?? [Color(red: 0.8, green: 0.3, blue: 0.3), Color(red: 0.6, green: 0.2, blue: 0.2)]),
                         startPoint: .topLeading,
                         endPoint: .bottomTrailing
                     )
@@ -174,9 +270,9 @@ struct AvailableTideCard: View {
                 Text(description)
                     .font(.system(size: 14))
                     .foregroundColor(.white.opacity(0.9))
-                    .lineLimit(3) // Increased from 2 to 3 lines
-                    .padding(.top, 8) // Increased top padding
-                    .padding(.bottom, 4) // Added bottom padding
+                    .lineLimit(4) // Increased line limit
+                    .padding(.top, 8)
+                    .padding(.bottom, 4)
                 
                 Spacer()
                 
@@ -234,7 +330,7 @@ struct AvailableTideCard: View {
                 .transition(.opacity)
             }
         }
-        .frame(height: 220) // Increased height to accommodate more description text
+        .frame(height: 240) // Increased height to accommodate more content
         .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 5)
     }
     
