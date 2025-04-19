@@ -64,16 +64,22 @@ struct GeoMessageView: View {
     let currentUserId: String
     
     var body: some View {
-        VStack(spacing: 12) {
-            ForEach(messages.isEmpty ? [] : messages) { message in
-                GeoMessageBubble(
-                    message: message,
-                    isCurrentUser: message.byUserId == currentUserId
-                )
-                .id(message.id)
+        Group {
+            if messages.isEmpty {
+                // Show nothing when there are no messages
+                EmptyView()
+            } else {
+                VStack(spacing: 12) {
+                    ForEach(messages) { message in
+                        GeoMessageBubble(
+                            message: message,
+                            isCurrentUser: message.byUserId == currentUserId
+                        )
+                        .id(message.id)
+                    }
+                }
             }
         }
-        .padding(.horizontal)
     }
 }
 

@@ -12,76 +12,127 @@ struct TideDetailView: View {
     @Environment(\.dismiss) private var dismiss
     @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
-    @State private var isLoading: Bool = true
+    // Using ViewModel's loading state instead of local state
     @State private var isJoining: Bool = false
     @State private var isLeaving: Bool = false
     @State private var showStatusMessage: Bool = false
     @State private var statusMessage: String = ""
+    @State private var showTideChat: Bool = false
+    @EnvironmentObject private var chatViewModel: ChatViewModel
     
     var body: some View {
         ZStack {
-            // Background gradient
+            // Background gradient with dark teal/slate tones (avoiding orange, purple, blue, green)
             LinearGradient(
                 gradient: Gradient(colors: [
-                    Color(red: 0.95, green: 0.4, blue: 0.4), // Warm red
-                    Color(red: 0.95, green: 0.6, blue: 0.3)  // Warm orange
+                    Color(red: 0.2, green: 0.3, blue: 0.35), // Dark slate
+                    Color(red: 0.3, green: 0.4, blue: 0.45)  // Muted teal
                 ]),
                 startPoint: .topLeading,
                 endPoint: .bottomTrailing
             )
             .ignoresSafeArea()
             
-            // Pattern overlay
+            // Pattern overlay with animated bubbles
             ZStack {
                 ForEach(0..<20) { i in
-                    Circle()
-                        .fill(Color.white.opacity(0.1))
-                        .frame(width: CGFloat.random(in: 50...150))
-                        .position(
-                            x: CGFloat.random(in: 0...UIScreen.main.bounds.width),
-                            y: CGFloat.random(in: 0...UIScreen.main.bounds.height)
-                        )
+                    // Use GeometryReader to get the screen size
+                    GeometryReader { geometry in
+                        Circle()
+                            .fill(Color.white.opacity(0.1))
+                            .frame(width: CGFloat.random(in: 50...150))
+                            // Position bubbles based on screen size
+                            .position(
+                                x: CGFloat.random(in: 0...geometry.size.width),
+                                y: CGFloat.random(in: 0...geometry.size.height)
+                            )
+                            // Add subtle animation when tide data loads
+                            .offset(y: singleTideViewModel.tideHasLoaded ? 0 : CGFloat.random(in: 20...40))
+                            .opacity(singleTideViewModel.tideHasLoaded ? 1.0 : 0.0)
+                            .animation(
+                                .spring(dampingFraction: 0.7)
+                                .delay(Double(i) * 0.03), // Staggered delay
+                                value: singleTideViewModel.tideHasLoaded
+                            )
+                    }
                 }
             }
             .ignoresSafeArea()
+            .allowsHitTesting(false) // Prevent interaction with bubbles
             
             // Content
             VStack {
-                // Navigation bar
-                HStack {
-                    Button {
-                        dismiss()
-                    } label: {
+                // Modern navigation bar with blur effect
+                ZStack {
+                    // Blur background
+                    Rectangle()
+                        .fill(.ultraThinMaterial)
+                        .opacity(0.7)
+                        .edgesIgnoringSafeArea(.top) // Extend to top of screen
+                    
+                    // Use ZStack to ensure title is always centered regardless of button sizes
+                    ZStack {
+                        // Center title
                         HStack {
-                            Image(systemName: "chevron.left")
-                                .font(.system(size: 20, weight: .semibold))
-                            Text("Back")
-                                .font(.system(size: 16, weight: .semibold))
+                            Spacer()
+                            Text("Tide Details")
+                                .font(.system(size: 18, weight: .semibold))
+                                .foregroundColor(.white)
+                            Spacer()
                         }
-                        .foregroundColor(.white)
+                        
+                        // Left and right buttons
+                        HStack {
+                            // Back button with modern icon
+                            Button {
+                                dismiss()
+                            } label: {
+                                HStack(spacing: 4) {
+                                    Image(systemName: "chevron.left")
+                                        .font(.system(size: 18, weight: .medium))
+                                    Text("Back")
+                                        .font(.system(size: 16, weight: .medium))
+                                }
+                                .foregroundColor(.white)
+                                .padding(8)
+                                .background(Color.white.opacity(0.15))
+                                .cornerRadius(10)
+                            }
+                            
+                            Spacer()
+                            
+                            // Chat button in navbar (only if user is a member)
+                            if let tide = singleTideViewModel.tide, tide.members.keys.contains(userViewModel.user?.id ?? "") {
+                                Button {
+                                    // Setup tide chat listener before showing chat
+                                    if let blockedUsers = userViewModel.user?.blockedUsers,
+                                       let blockedByUsers = userViewModel.user?.blockedByUsers {
+                                        chatViewModel.attachTideChatListener(tideId: tideId, 
+                                                                            blockedByUsers: blockedByUsers, 
+                                                                            blockedUsers: blockedUsers)
+                                        showTideChat = true
+                                    }
+                                } label: {
+                                    Image(systemName: "message.fill")
+                                        .font(.system(size: 20))
+                                        .foregroundColor(.white)
+                                        .padding(8)
+                                        .background(Color.white.opacity(0.15))
+                                        .cornerRadius(10)
+                                }
+                            } else {
+                                // Empty view to balance layout when chat button isn't shown
+                                Color.clear
+                                    .frame(width: 40, height: 40)
+                            }
+                        }
                     }
-                    
-                    Spacer()
-                    
-                    Text("Tide Details")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                    
-                    Spacer()
-                    
-                    // Placeholder to balance the back button
-                    HStack {
-                        Text("Back")
-                            .font(.system(size: 16, weight: .semibold))
-                        Image(systemName: "chevron.left")
-                            .font(.system(size: 20, weight: .semibold))
-                    }
-                    .opacity(0)
+                    .padding(.horizontal)
+                    .padding(.vertical, 12)
                 }
-                .padding()
-                .background(Color.black.opacity(0.2))
+                .frame(height: 56)
                 
-                if isLoading {
+                if !singleTideViewModel.tideHasLoaded {
                     Spacer()
                     ProgressView()
                         .progressViewStyle(CircularProgressViewStyle(tint: .white))
@@ -115,6 +166,18 @@ struct TideDetailView: View {
                                     .foregroundColor(.white.opacity(0.9))
                                 
                                 Text("Participants: \(tide.participantCount)/\(tide.maxParticipants)")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white.opacity(0.9))
+                            }
+                            .padding(.horizontal)
+                            
+                            // Category
+                            HStack {
+                                Image(systemName: "tag.fill")
+                                    .font(.system(size: 16))
+                                    .foregroundColor(.white.opacity(0.9))
+                                
+                                Text("Category: \(tide.tideCategory.rawValue)")
                                     .font(.system(size: 16))
                                     .foregroundColor(.white.opacity(0.9))
                             }
@@ -210,61 +273,9 @@ struct TideDetailView: View {
                                     .disabled(isJoining)
                                 }
                                 
-                                // Chat button (if member)
-                                if tide.members.keys.contains(userViewModel.user?.id ?? "") {
-                                    Button {
-                                        // Open chat action
-                                    } label: {
-                                        HStack {
-                                            Text("Open Chat")
-                                                .font(.system(size: 16, weight: .semibold))
-                                            
-                                            Image(systemName: "message.fill")
-                                                .font(.system(size: 16))
-                                        }
-                                        .frame(maxWidth: .infinity)
-                                        .padding(.vertical, 14)
-                                        .background(
-                                            LinearGradient(
-                                                gradient: Gradient(colors: [
-                                                    Color.blue.opacity(0.7),
-                                                    Color.blue.opacity(0.5)
-                                                ]),
-                                                startPoint: .leading,
-                                                endPoint: .trailing
-                                            )
-                                        )
-                                        .foregroundColor(.white)
-                                        .cornerRadius(12)
-                                    }
-                                }
+                                // Chat button removed - now in navbar
                                 
-                                // Close button
-                                Button {
-                                    dismiss()
-                                } label: {
-                                    HStack {
-                                        Text("Close")
-                                            .font(.system(size: 16, weight: .semibold))
-                                        
-                                        Image(systemName: "xmark.circle")
-                                            .font(.system(size: 16))
-                                    }
-                                    .frame(maxWidth: .infinity)
-                                    .padding(.vertical, 14)
-                                    .background(
-                                        LinearGradient(
-                                            gradient: Gradient(colors: [
-                                                Color.gray.opacity(0.7),
-                                                Color.gray.opacity(0.5)
-                                            ]),
-                                            startPoint: .leading,
-                                            endPoint: .trailing
-                                        )
-                                    )
-                                    .foregroundColor(.white)
-                                    .cornerRadius(12)
-                                }
+                                // Close button removed
                             }
                             .padding(.horizontal)
                             .padding(.top, 20)
@@ -333,17 +344,21 @@ struct TideDetailView: View {
             }
         }
         .onAppear {
-            // Load tide details
+            // Load tide details - tideHasLoaded will be set to true in the ViewModel
             singleTideViewModel.attachTideListener(tideId: tideId)
-            
-            // Add a delay to show loading indicator
-            DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-                isLoading = false
-            }
         }
         .onDisappear {
-            // Clean up listener
+            // Clean up listeners
+            print("Removing tide listener and chat listener")
             singleTideViewModel.removeTideListener()
+            chatViewModel.removeTideChatListener()
+        }
+        .fullScreenCover(isPresented: $showTideChat) {
+            TideChatView()
+                .onDisappear {
+                    // No need to remove the listener here as we want to keep it active
+                    // while the TideDetailView is still visible
+                }
         }
     }
     
@@ -363,20 +378,24 @@ struct TideDetailView: View {
             await MainActor.run {
                 switch status {
                 case .joined:
-                    statusMessage = "Successfully joined tide!"
+                    // Success case - don't show message
+                    showStatusMessage = false
                 case .alreadyJoined:
                     statusMessage = "You're already a member of this tide"
+                    showStatusMessage = true
                 case .invalidTide:
                     statusMessage = "Invalid tide data"
+                    showStatusMessage = true
                 case .noDocument:
                     statusMessage = "Tide not found"
+                    showStatusMessage = true
                 case .full:
                     statusMessage = "This tide is full"
+                    showStatusMessage = true
                 case .failed:
                     statusMessage = "Failed to join tide"
+                    showStatusMessage = true
                 }
-                
-                showStatusMessage = true
                 
                 // Hide status after a delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {
@@ -404,18 +423,21 @@ struct TideDetailView: View {
             await MainActor.run {
                 switch status {
                 case .left:
-                    statusMessage = "Successfully left tide"
+                    // Success case - don't show message
+                    showStatusMessage = false
                 case .invalidData:
                     statusMessage = "Invalid data provided"
+                    showStatusMessage = true
                 case .failed:
                     statusMessage = "Failed to leave tide"
+                    showStatusMessage = true
                 case .noDocument:
                     statusMessage = "Tide not found"
+                    showStatusMessage = true
                 case .notMember:
                     statusMessage = "You are not a member of this tide"
+                    showStatusMessage = true
                 }
-                
-                showStatusMessage = true
                 
                 // Hide status after a delay
                 DispatchQueue.main.asyncAfter(deadline: .now() + 2) {

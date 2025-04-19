@@ -17,15 +17,6 @@ struct AvailableTideListView: View {
     @State private var selectedTideId: String = ""
     @State private var showCreateTide: Bool = false
     
-    // Define tide categories
-    let categories = [
-        "Popular": "Most active Tides",
-        "New": "Recently created Tides",
-        "Social": "Tides focused on social activities",
-        "Outdoor": "Tides for outdoor adventures",
-        "Learning": "Educational and skill-sharing Tides"
-    ]
-    
     var body: some View {
         VStack {
             HStack {
@@ -49,10 +40,10 @@ struct AvailableTideListView: View {
             if tidesViewModel.availableTidesHaveLoaded {
                 ScrollView {
                     VStack(alignment: .leading, spacing: 25) {
-                        // Custom ordered categories with Popular first, New second, then alphabetically
-                        ForEach(sortedCategories(), id: \.self) { category in
+                        // Group tides by their actual categories
+                        ForEach(groupedTideCategories(), id: \.self) { category in
                             // Only show categories that have tides
-                            if !filteredTides(for: category).isEmpty {
+                            if !tidesForCategory(category).isEmpty {
                                 VStack(alignment: .leading, spacing: 8) {
                                     // Category header
                                     HStack {
@@ -63,24 +54,21 @@ struct AvailableTideListView: View {
                                         
                                         Spacer()
                                         
-                                        Text(categories[category] ?? "")
-                                            .font(.caption)
-                                            .foregroundColor(.white.opacity(0.7))
-                                            .padding(.trailing)
+                                        // No description displayed
                                     }
                                     
                                     // Horizontal scroll for this category
                                     ScrollView(.horizontal, showsIndicators: false) {
                                         HStack(spacing: 15) {
-                                            // Filter tides for this category
-                                            ForEach(filteredTides(for: category), id: \.self) { tide in
+                                            // Show tides for this category
+                                            ForEach(tidesForCategory(category), id: \.self) { tide in
                                                 AvailableTideCard(
                                                     tideId: tide.id ?? "",
                                                     title: tide.title,
                                                     creator: tide.creatorUsername,
                                                     participants: "\(tide.participantCount)/\(tide.maxParticipants)",
                                                     description: tide.description,
-                                                    category: category
+                                                    category: tide.tideCategory.rawValue
                                                 )
                                                 .frame(width: 300)
                                             }
@@ -154,37 +142,18 @@ struct AvailableTideListView: View {
         }
     }
     
-    // Helper function to sort categories in custom order
-    private func sortedCategories() -> [String] {
-        let allCategories = Array(categories.keys)
-        let orderedCategories = allCategories.sorted { (lhs, rhs) -> Bool in
-            if lhs == "Popular" { return true }
-            if rhs == "Popular" { return false }
-            if lhs == "New" { return true }
-            if rhs == "New" { return false }
-            return lhs < rhs // alphabetical for the rest
-        }
-        return orderedCategories
+    // Get all categories that have tides
+    private func groupedTideCategories() -> [String] {
+        // Get all unique categories from available tides
+        let categories = Set(tidesViewModel.availableTides.map { $0.tideCategory.rawValue })
+        
+        // Sort categories alphabetically
+        return Array(categories).sorted()
     }
     
-    // Function to filter tides by category - in a real implementation this would use proper category data
-    private func filteredTides(for category: String) -> [Tide] {
-        // This is a simplified filtering approach without actual category data
-        // In a real app, you would have categories as part of your Tide model
-        let tides = tidesViewModel.availableTides
-        
-        switch category {
-        case "Popular":
-            return tides.sorted { ($0.participantCount, $0.title) > ($1.participantCount, $1.title) }
-                      .prefix(min(tides.count, 5)).map { $0 }
-        case "New":
-            return Array(tides.suffix(min(tides.count, 5)))
-        case "Social", "Outdoor", "Learning":
-            // For demo purposes, just show some random subset based on the title
-            return tides.filter { $0.title.count % (categories.count) == categories.keys.sorted().firstIndex(of: category)! % (categories.count) }
-        default:
-            return []
-        }
+    // Get tides for a specific category
+    private func tidesForCategory(_ category: String) -> [Tide] {
+        return tidesViewModel.availableTides.filter { $0.tideCategory.rawValue == category }
     }
 }
 
@@ -206,11 +175,53 @@ struct AvailableTideCard: View {
     // Colors for different categories
     private var categoryColors: [String: [Color]] {
         [
-            "Popular": [Color(red: 0.8, green: 0.3, blue: 0.3), Color(red: 0.6, green: 0.2, blue: 0.2)],
-            "New": [Color(red: 0.4, green: 0.5, blue: 0.8), Color(red: 0.2, green: 0.3, blue: 0.6)],
+            // Social and Community
             "Social": [Color(red: 0.8, green: 0.5, blue: 0.2), Color(red: 0.6, green: 0.4, blue: 0.1)],
+            "Networking": [Color(red: 0.4, green: 0.6, blue: 0.8), Color(red: 0.3, green: 0.5, blue: 0.7)],
+            
+            // Outdoor and Adventure
             "Outdoor": [Color(red: 0.3, green: 0.7, blue: 0.3), Color(red: 0.2, green: 0.5, blue: 0.2)],
-            "Learning": [Color(red: 0.5, green: 0.3, blue: 0.7), Color(red: 0.4, green: 0.2, blue: 0.5)]
+            "Hiking": [Color(red: 0.2, green: 0.6, blue: 0.3), Color(red: 0.1, green: 0.5, blue: 0.2)],
+            "Biking": [Color(red: 0.3, green: 0.7, blue: 0.4), Color(red: 0.2, green: 0.6, blue: 0.3)],
+            "Climbing": [Color(red: 0.4, green: 0.6, blue: 0.3), Color(red: 0.3, green: 0.5, blue: 0.2)],
+            "Camping": [Color(red: 0.3, green: 0.5, blue: 0.2), Color(red: 0.2, green: 0.4, blue: 0.1)],
+            "Beach": [Color(red: 0.0, green: 0.7, blue: 0.9), Color(red: 0.0, green: 0.6, blue: 0.8)],
+            "Sports": [Color(red: 0.2, green: 0.6, blue: 0.8), Color(red: 0.1, green: 0.5, blue: 0.7)],
+            "Running": [Color(red: 0.8, green: 0.4, blue: 0.3), Color(red: 0.7, green: 0.3, blue: 0.2)],
+            "Swimming": [Color(red: 0.0, green: 0.6, blue: 0.8), Color(red: 0.0, green: 0.5, blue: 0.7)],
+            
+            // Food and Drinks
+            "Food": [Color(red: 0.8, green: 0.4, blue: 0.4), Color(red: 0.7, green: 0.3, blue: 0.3)],
+            "Coffee": [Color(red: 0.6, green: 0.4, blue: 0.2), Color(red: 0.5, green: 0.3, blue: 0.1)],
+            "Brunch": [Color(red: 0.9, green: 0.6, blue: 0.3), Color(red: 0.8, green: 0.5, blue: 0.2)],
+            "Dinner": [Color(red: 0.7, green: 0.3, blue: 0.5), Color(red: 0.6, green: 0.2, blue: 0.4)],
+            "Cooking": [Color(red: 0.8, green: 0.5, blue: 0.3), Color(red: 0.7, green: 0.4, blue: 0.2)],
+            "Baking": [Color(red: 0.9, green: 0.7, blue: 0.5), Color(red: 0.8, green: 0.6, blue: 0.4)],
+            "Wine Tasting": [Color(red: 0.6, green: 0.2, blue: 0.3), Color(red: 0.5, green: 0.1, blue: 0.2)],
+            "Beer Tasting": [Color(red: 0.7, green: 0.5, blue: 0.2), Color(red: 0.6, green: 0.4, blue: 0.1)],
+            
+            // Arts and Culture
+            "Arts": [Color(red: 0.8, green: 0.3, blue: 0.7), Color(red: 0.7, green: 0.2, blue: 0.6)],
+            "Music": [Color(red: 0.5, green: 0.3, blue: 0.7), Color(red: 0.4, green: 0.2, blue: 0.6)],
+            "Concerts": [Color(red: 0.6, green: 0.3, blue: 0.8), Color(red: 0.5, green: 0.2, blue: 0.7)],
+            "Theater": [Color(red: 0.7, green: 0.2, blue: 0.5), Color(red: 0.6, green: 0.1, blue: 0.4)],
+            "Museums": [Color(red: 0.5, green: 0.5, blue: 0.7), Color(red: 0.4, green: 0.4, blue: 0.6)],
+            "Photography": [Color(red: 0.3, green: 0.3, blue: 0.3), Color(red: 0.2, green: 0.2, blue: 0.2)],
+            "Dance": [Color(red: 0.9, green: 0.4, blue: 0.6), Color(red: 0.8, green: 0.3, blue: 0.5)],
+            "Writing": [Color(red: 0.3, green: 0.5, blue: 0.7), Color(red: 0.2, green: 0.4, blue: 0.6)],
+            "Book Club": [Color(red: 0.6, green: 0.4, blue: 0.7), Color(red: 0.5, green: 0.3, blue: 0.6)],
+            
+            // Learning and Growth
+            "Learning": [Color(red: 0.5, green: 0.3, blue: 0.7), Color(red: 0.4, green: 0.2, blue: 0.6)],
+            "Language Exchange": [Color(red: 0.3, green: 0.6, blue: 0.7), Color(red: 0.2, green: 0.5, blue: 0.6)],
+            "Coding": [Color(red: 0.2, green: 0.5, blue: 0.6), Color(red: 0.1, green: 0.4, blue: 0.5)],
+            "Business": [Color(red: 0.3, green: 0.4, blue: 0.6), Color(red: 0.2, green: 0.3, blue: 0.5)],
+            "Investing": [Color(red: 0.2, green: 0.6, blue: 0.5), Color(red: 0.1, green: 0.5, blue: 0.4)],
+            "Career": [Color(red: 0.4, green: 0.5, blue: 0.6), Color(red: 0.3, green: 0.4, blue: 0.5)],
+            "Workshop": [Color(red: 0.5, green: 0.4, blue: 0.6), Color(red: 0.4, green: 0.3, blue: 0.5)],
+            
+            // Default colors for other categories
+            "Other": [Color(red: 0.5, green: 0.5, blue: 0.5), Color(red: 0.4, green: 0.4, blue: 0.4)]
         ]
     }
     

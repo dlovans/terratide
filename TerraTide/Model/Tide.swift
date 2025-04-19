@@ -6,6 +6,7 @@
 //
 
 import FirebaseFirestore
+import Foundation
 
 struct Tide: Identifiable, Hashable, Equatable, Codable {
     @DocumentID var id: String?
@@ -18,4 +19,10 @@ struct Tide: Identifiable, Hashable, Equatable, Codable {
     let members: [String: String]
     let memberIds: [String]
     let adult: Bool
+    let category: String
+    
+    // Computed property to get the TideCategory enum value
+    var tideCategory: TideCategory {
+        return TideCategory(rawValue: category) ?? .other
+    }
 }

@@ -33,9 +33,10 @@ class SingleTideViewModel: ObservableObject {
         tideDescription: String,
         maxParticipants: Int,
         boundingBox: BoundingBox,
-        adult: Bool
+        adult: Bool,
+        category: TideCategory
     ) async -> TideCreationStatus {
-        return await singleTideRepository.createTide(byUserID: byUserID, byUsername: byUsername, tideTitle: tideTitle, tideDescription: tideDescription, maxParticipants: maxParticipants, boundingBox: boundingBox, adult: adult)
+        return await singleTideRepository.createTide(byUserID: byUserID, byUsername: byUsername, tideTitle: tideTitle, tideDescription: tideDescription, maxParticipants: maxParticipants, boundingBox: boundingBox, adult: adult, category: category)
     }
     
     /// Joins a Tide.

@@ -17,6 +17,7 @@ class ChatViewModel: ObservableObject {
     private var chatRepositoy = ChatRepository()
     private var geoChatListener: ListenerRegistration? = nil
     private var tideChatListener: ListenerRegistration? = nil
+    private var currentTideId: String? = nil
     
     /// Attaches a listener to geo chat messages.
     /// - Parameter userLocation: User location with longitude and latitude values.
@@ -53,9 +54,23 @@ class ChatViewModel: ObservableObject {
         return await chatRepositoy.createGeoMessage(with: text, by: sender, with: userId, boundingBox: boundingBox, adult: adult)
     }
     
+    /// Calls a method to create a tide message in database.
+    /// - Parameters:
+    ///   - text: Message content.
+    ///   - sender: Username of sender.
+    ///   - userId: User ID of sender.
+    /// - Returns: Status of message operation.
+    func createTideMessage(with text: String, by sender: String, with userId: String) async -> MessageStatus {
+        guard let tideId = self.currentTideId else {
+            return .invalidData
+        }
+        return await chatRepositoy.createTideMessage(tideId: tideId, with: text, by: sender, with: userId)
+    }
+    
     /// Attaches a listener to tide chat messages.
     /// - Parameter tideId: ID of Tide with `messages` subcollection to fetch and listen to.
     func attachTideChatListener(tideId: String, blockedByUsers: [String], blockedUsers: [String: String]) {
+        self.currentTideId = tideId
         let newTideChatListener = chatRepositoy.attachTideChatListener(for: tideId, blockedByUsers: blockedByUsers, blockedUsers: blockedUsers) { [weak self] messages in
             if let messages {
                 self?.tideMessages = messages
@@ -75,16 +90,8 @@ class ChatViewModel: ObservableObject {
         self.tideChatListener?.remove()
         self.tideChatListener = nil
         self.tideMessages = []
+        self.currentTideId = nil
     }
     
-    /// Create a Tide message document in the database.
-    /// - Parameters:
-    ///   - tideId: ID of Tide with `messages` subcollection.
-    ///   - text: Message content.
-    ///   - sender: Username of sender.
-    ///   - userId: User ID of sender.
-    /// - Returns: Status of message operation.
-    func createTideMessage(tideId: String, text: String, sender: String, userId: String) async -> MessageStatus {
-        return await chatRepositoy.createTideMessage(tideId: tideId, with: text, by: sender, with: userId)
-    }
+
 }

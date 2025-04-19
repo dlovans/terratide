@@ -10,10 +10,13 @@ import SwiftUI
 struct ActiveTideListView: View {
     @EnvironmentObject private var tidesViewModel: TidesViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @State private var openingOrLeavingTide: Bool = false
+    @State private var showTideDetail: Bool = false
+    @State private var selectedTideId: String = ""
     
     var body: some View {
-        VStack {
+        VStack(spacing: 0) {
             HStack {
                 Text("My Tides")
                     .font(.title2)
@@ -22,10 +25,16 @@ struct ActiveTideListView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.horizontal)
             }
+            .padding(.top, 10)
             
             if tidesViewModel.activeTidesHaveLoaded {
                 ScrollView {
+                    // Add top padding to ensure first card doesn't overflow into safe area
                     LazyVStack(spacing: 15) {
+                        // Add spacer at the top to push content down
+                        Rectangle()
+                            .fill(Color.clear)
+                            .frame(height: 10)
                         ForEach(tidesViewModel.activeTides, id: \.self) { tide in
                             // Simplified placeholder for ActiveTideItemView
                             SimpleTideCard(
@@ -34,7 +43,10 @@ struct ActiveTideListView: View {
                                 participants: "\(tide.participantCount)/\(tide.maxParticipants)",
                                 description: tide.description,
                                 tideId: tide.id ?? "",
-                                isCreator: tide.creatorId == userViewModel.user?.id
+                                isCreator: tide.creatorId == userViewModel.user?.id,
+                                category: tide.tideCategory.rawValue,
+                                parentShowTideDetail: $showTideDetail,
+                                parentSelectedTideId: $selectedTideId
                             )
                         }
                     }
@@ -42,7 +54,7 @@ struct ActiveTideListView: View {
                     .padding(.bottom, 30)
                 }
                 .scrollIndicators(.hidden)
-                .padding(.top, 10)
+                .padding(.top, 5)
             } else {
                 Spacer()
                 ProgressView()
@@ -52,7 +64,7 @@ struct ActiveTideListView: View {
             }
         }
         .frame(maxHeight: .infinity, alignment: .top)
-        .padding(.top, 7)
+        .padding(.top, 15)
         .padding(.bottom, 20)
         .background(Color.clear) // Ensure background is transparent
         .onAppear {
@@ -69,6 +81,27 @@ struct ActiveTideListView: View {
                 print("Active tides listener destroyed.")
             }
         }
+        .onChange(of: singleTideViewModel.lastJoinedTideId) { oldValue, newValue in
+            if let tideId = newValue, !tideId.isEmpty {
+                print("Tide with ID: \(tideId) was accessed")
+                selectedTideId = tideId
+                showTideDetail = true
+                // Reset lastJoinedTideId after we've handled it
+                Task { @MainActor in
+                    singleTideViewModel.lastJoinedTideId = nil
+                }
+            }
+        }
+        .fullScreenCover(isPresented: $showTideDetail) {
+            // When showing the detail view, ensure we have the correct tide ID
+            // and that the tide listener is properly attached
+            TideDetailView(tideId: selectedTideId)
+                .onAppear {
+                    // Ensure the tide listener is attached when the view appears
+                    print("Ensuring tide listener is attached for ID: \(selectedTideId)")
+                    singleTideViewModel.attachTideListener(tideId: selectedTideId)
+                }
+        }
     }
 }
 
@@ -80,13 +113,29 @@ struct SimpleTideCard: View {
     var description: String = "Join this tide to collaborate with others and achieve your goals together."
     var tideId: String = ""
     var isCreator: Bool = false
+    var category: String = "Other"
     
     @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
     @EnvironmentObject private var userViewModel: UserViewModel
     @State private var isLeaving: Bool = false
     @State private var showLeaveStatus: Bool = false
     @State private var leaveStatus: String? = nil
-    @State private var showTideDetail: Bool = false
+    // Using parent view's state for navigation
+    @Binding var parentShowTideDetail: Bool
+    @Binding var parentSelectedTideId: String
+    
+    // Initialize with default parameters
+    init(title: String, creator: String, participants: String, description: String = "Join this tide to collaborate with others and achieve your goals together.", tideId: String = "", isCreator: Bool = false, category: String = "Other", parentShowTideDetail: Binding<Bool>, parentSelectedTideId: Binding<String>) {
+        self.title = title
+        self.creator = creator
+        self.participants = participants
+        self.description = description
+        self.tideId = tideId
+        self.isCreator = isCreator
+        self.category = category
+        self._parentShowTideDetail = parentShowTideDetail
+        self._parentSelectedTideId = parentSelectedTideId
+    }
     
     var body: some View {
         ZStack {
@@ -143,6 +192,17 @@ struct SimpleTideCard: View {
                         .foregroundColor(.white.opacity(0.8))
                 }
                 
+                // Category with tag icon
+                HStack(spacing: 6) {
+                    Image(systemName: "tag.fill")
+                        .foregroundColor(.white.opacity(0.8))
+                        .font(.system(size: 14))
+                    
+                    Text(category)
+                        .font(.system(size: 14, weight: .medium))
+                        .foregroundColor(.white.opacity(0.8))
+                }
+                
                 // Description - increased line limit and added more vertical space
                 Text(description)
                     .font(.system(size: 14))
@@ -157,7 +217,14 @@ struct SimpleTideCard: View {
                     // Open button
                     Button(action: {
                         print("Opening tide: \(tideId)")
-                        showTideDetail = true
+                        // Use the parent's binding to show the detail view
+                        parentSelectedTideId = tideId
+                        
+                        // Ensure the tide listener is attached before showing the detail view
+                        singleTideViewModel.attachTideListener(tideId: tideId)
+                        
+                        // Then show the detail view
+                        parentShowTideDetail = true
                     }) {
                         HStack {
                             Text("Open")
@@ -239,9 +306,6 @@ struct SimpleTideCard: View {
         }
         .frame(height: 220) // Increased height to accommodate more description text
         .shadow(color: Color.black.opacity(0.3), radius: 10, x: 0, y: 5)
-        .fullScreenCover(isPresented: $showTideDetail) {
-            TideDetailView(tideId: tideId)
-        }
     }
     
     private func leaveTide() {

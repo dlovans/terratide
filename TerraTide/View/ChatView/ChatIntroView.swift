@@ -15,9 +15,7 @@ struct ChatIntroView: View {
         "Be respectful to all participants in the chat",
         "Dating and romantic solicitation is strictly prohibited",
         "No illicit activities or discussions of illegal content",
-        "No hate speech, harassment, or bullying",
-        "No spam or excessive self-promotion",
-        "No sharing of personal contact information"
+        "No hate speech, harassment, or bullying"
     ]
     
     var body: some View {

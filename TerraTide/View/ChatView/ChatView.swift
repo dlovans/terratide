@@ -28,7 +28,7 @@ struct ChatView: View {
     @FocusState private var isInputFieldFocused: Bool
     
     // Generate fixed bubble positions just once
-    private let backgroundBubbles: [BackgroundBubble] = {
+    private let backgroundBubbles = {
         var bubbles = [BackgroundBubble]()
         for i in 0..<20 {
             bubbles.append(BackgroundBubble(
@@ -229,11 +229,15 @@ struct ChatView: View {
                                 TextField("Type a message...", text: $messageText, axis: .vertical)
                                     .focused($isInputFieldFocused)
                                     .padding(12)
-                                    .background(Color.black.opacity(0.1)) // Semi-transparent background
+                                    .background(
+                                        RoundedRectangle(cornerRadius: 12)
+                                            .fill(Color.black.opacity(0.1)) // Semi-transparent background
+                                    )
                                     .overlay(
                                         RoundedRectangle(cornerRadius: 12)
                                             .stroke(Color(red: 0.0, green: 0.6, blue: 0.5).opacity(0.9), lineWidth: 1.5) // Light emerald green border
                                     )
+                                    .clipShape(RoundedRectangle(cornerRadius: 12)) // Clip to match border
                                     .foregroundColor(.white) // Text color
                                     .tint(.white) // Cursor color
                                     .lineLimit(1...5) // Start with 1 line, allow up to 5
@@ -275,17 +279,6 @@ struct ChatView: View {
                             }
                             .padding(.horizontal)
                             .padding(.vertical, 10)
-                            .background(
-                                // Gradient background for input container
-                                LinearGradient(
-                                    gradient: Gradient(colors: [
-                                        Color.black.opacity(0.05),
-                                        Color.black.opacity(0.1)
-                                    ]),
-                                    startPoint: .top,
-                                    endPoint: .bottom
-                                )
-                            )
                             .contentShape(Rectangle())
                             .onTapGesture {
                                 // Do nothing, just intercept taps

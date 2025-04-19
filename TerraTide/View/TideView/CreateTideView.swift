@@ -4,12 +4,15 @@ import Combine
 
 struct CreateTideView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject private var singleTideViewModel: SingleTideViewModel
+    @EnvironmentObject private var userViewModel: UserViewModel
+    @EnvironmentObject private var locationService: LocationService
     
     // Form fields
     @State private var tideTitle: String = ""
     @State private var tideDescription: String = ""
     @State private var maxParticipants: String = "4"
-    @State private var selectedCategory: String = "Social"
+    @State private var selectedCategory: TideCategory = .social
     @FocusState private var activeField: Field?
     
     // Animation state
@@ -23,9 +26,6 @@ struct CreateTideView: View {
     // Validation state
     @State private var showValidationAlert: Bool = false
     @State private var validationMessage: String = ""
-    
-    // Categories available for tides
-    let categories = ["Social", "Outdoor", "Learning"]
     
     // Soft gradient colors for the background
     let gradientColors = [
@@ -249,31 +249,37 @@ struct CreateTideView: View {
                                         .foregroundColor(.white.opacity(0.8))
                                 }
                                 
-                                // Category picker - Dropdown style
+                                // Category picker - Dropdown style with groups
                                 VStack(alignment: .leading, spacing: 6) {
                                     Text("Category")
                                         .font(.headline)
                                         .foregroundColor(.white)
                                     
                                     Menu {
-                                        ForEach(categories, id: \.self) { category in
-                                            Button(action: {
-                                                selectedCategory = category
-                                                animateBubbles()
-                                            }) {
-                                                HStack {
-                                                    Text(category)
-                                                    
-                                                    if selectedCategory == category {
-                                                        Spacer()
-                                                        Image(systemName: "checkmark")
+                                        ForEach(TideCategory.categoriesByGroup().keys.sorted(), id: \.self) { group in
+                                            if let categories = TideCategory.categoriesByGroup()[group] {
+                                                Section(header: Text(group)) {
+                                                    ForEach(categories, id: \.self) { category in
+                                                        Button(action: {
+                                                            selectedCategory = category
+                                                            animateBubbles()
+                                                        }) {
+                                                            HStack {
+                                                                Text(category.rawValue)
+                                                                
+                                                                if selectedCategory == category {
+                                                                    Spacer()
+                                                                    Image(systemName: "checkmark")
+                                                                }
+                                                            }
+                                                        }
                                                     }
                                                 }
                                             }
                                         }
                                     } label: {
                                         HStack {
-                                            Text(selectedCategory)
+                                            Text(selectedCategory.rawValue)
                                                 .foregroundColor(.white)
                                             
                                             Spacer()
@@ -441,11 +447,66 @@ struct CreateTideView: View {
             return
         }
         
-        // In a real app, you would call a view model method here to create the tide
-        // and then dismiss this view once successful
+        // Check if we have a valid bounding box from location service
+        guard let boundingBox = locationService.boundingBox else {
+            validationMessage = "Unable to determine your location. Please ensure location services are enabled."
+            showValidationAlert = true
+            return
+        }
         
-        // For now, just dismiss the view
-        dismiss()
+        // Check if we have valid user information
+        guard let userId = userViewModel.user?.id,
+              let username = userViewModel.user?.username,
+              let adult = userViewModel.user?.adult else {
+            validationMessage = "User information is missing. Please ensure you're logged in."
+            showValidationAlert = true
+            return
+        }
+        
+        // Create the tide using the SingleTideViewModel
+        Task {
+            // Default adult content to false for now
+            
+            let creationStatus = await singleTideViewModel.createTide(
+                byUserID: userId,
+                byUsername: username,
+                tideTitle: tideTitle,
+                tideDescription: tideDescription,
+                maxParticipants: participantsCount,
+                boundingBox: boundingBox,
+                adult: adult,
+                category: selectedCategory
+            )
+            
+            // Handle the creation status on the main thread
+            await MainActor.run {
+                switch creationStatus {
+                case .created(let tideId):
+                    // Success - dismiss this view and set the lastJoinedTideId to trigger navigation
+                    // This uses the same pattern as in AvailableTideListView
+                    DispatchQueue.main.async {
+                        singleTideViewModel.lastJoinedTideId = tideId
+                        dismiss()
+                    }
+                    
+                case .failed:
+                    validationMessage = "Failed to create tide. Please try again."
+                    showValidationAlert = true
+                    
+                case .invalidData:
+                    validationMessage = "Invalid data provided. Please check your inputs."
+                    showValidationAlert = true
+                    
+                case .missingCredentials:
+                    validationMessage = "Missing credentials. Please ensure you're logged in."
+                    showValidationAlert = true
+                    
+                case .missingTideId:
+                    validationMessage = "Missing tide ID. Please try again."
+                    showValidationAlert = true
+                }
+            }
+        }
     }
 }
 

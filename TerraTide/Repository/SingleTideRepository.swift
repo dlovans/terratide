@@ -27,13 +27,18 @@ class SingleTideRepository {
         tideDescription: String,
         maxParticipants: Int,
         boundingBox: BoundingBox,
-        adult: Bool
+        adult: Bool,
+        category: TideCategory
     ) async -> TideCreationStatus {
         if byUserID.isEmpty || byUsername.isEmpty {
             return .missingCredentials
         }
         
         if tideTitle.isEmpty || tideDescription.isEmpty || maxParticipants < 2 || maxParticipants > 10000 {
+            return .invalidData
+        }
+        
+        if !TideCategory.allCases.contains(category) {
             return .invalidData
         }
         
@@ -55,7 +60,8 @@ class SingleTideRepository {
                 "active": true,
                 "primedForDeletion": false,
                 "memberIds": [byUserID],
-                "adult": adult
+                "adult": adult,
+                "category": category.rawValue
             ])
             
             if result.documentID.isEmpty {
